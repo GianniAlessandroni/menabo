@@ -1,0 +1,13 @@
+# =============================================================================
+#  menabò — an experiment in human-agent newsroom integration
+# -----------------------------------------------------------------------------
+#  File:     spark-a/mail-server/config/matrix-capo-recipients.cf
+#  Purpose:  Recipients reachable by the matrix_to_capo class (segreteria):
+#            the caporedattore alone, phases 1-2 (SPEC §6.3).
+#  Author:   Gianni Alessandroni
+#  Created:  2026-08-16
+#  License:  Apache-2.0 — see LICENSE
+#  Part of:  menabò https://github.com/GianniAlessandroni/menabo
+# =============================================================================
+
+caporedattore@redazione.local   OK

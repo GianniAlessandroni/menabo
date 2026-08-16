@@ -1,0 +1,19 @@
+# =============================================================================
+#  menabò — an experiment in human-agent newsroom integration
+# -----------------------------------------------------------------------------
+#  File:     spark-a/mail-server/config/sender-login-maps.cf
+#  Purpose:  Bind each sender address to the only SASL login allowed to use
+#            it; the mismatch rejections in postfix-main.cf enforce it.
+#  Author:   Gianni Alessandroni
+#  Created:  2026-08-16
+#  License:  Apache-2.0 — see LICENSE
+#  Part of:  menabò https://github.com/GianniAlessandroni/menabo
+# =============================================================================
+
+gianni@redazione.local          gianni@redazione.local
+caporedattore@redazione.local   caporedattore@redazione.local
+cronista@redazione.local        cronista@redazione.local
+verificatore@redazione.local    verificatore@redazione.local
+art-director@redazione.local    art-director@redazione.local
+impaginatore@redazione.local    impaginatore@redazione.local
+segreteria@redazione.local      segreteria@redazione.local

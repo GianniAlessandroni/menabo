@@ -1,0 +1,17 @@
+# =============================================================================
+#  menabò — an experiment in human-agent newsroom integration
+# -----------------------------------------------------------------------------
+#  File:     spark-a/mail-server/config/matrix-core-recipients.cf
+#  Purpose:  Recipients reachable by the matrix_to_core class (working
+#            agents): the five newsroom agents, no director, no segreteria.
+#  Author:   Gianni Alessandroni
+#  Created:  2026-08-16
+#  License:  Apache-2.0 — see LICENSE
+#  Part of:  menabò https://github.com/GianniAlessandroni/menabo
+# =============================================================================
+
+caporedattore@redazione.local   OK
+cronista@redazione.local        OK
+verificatore@redazione.local    OK
+art-director@redazione.local    OK
+impaginatore@redazione.local    OK

@@ -1,0 +1,38 @@
+# =============================================================================
+#  menabò — an experiment in human-agent newsroom integration
+# -----------------------------------------------------------------------------
+#  File:     spark-a/mail-server/config/postfix-main.cf
+#  Purpose:  Postfix overrides (appended to main.cf by docker-mailserver):
+#            the delivery matrix, the structural BCC and the content filter.
+#            This file IS the newsroom's who-may-talk-to-whom law (SPEC §6).
+#  Author:   Gianni Alessandroni
+#  Created:  2026-08-16
+#  License:  Apache-2.0 — see LICENSE
+#  Part of:  menabò https://github.com/GianniAlessandroni/menabo
+# =============================================================================
+
+# Structural BCC: the director observes everything that is delivered,
+# independently of agent behaviour (SPEC §6.2). The message passes cleanup
+# twice (submission + re-injection); Postfix duplicate-recipient elimination
+# keeps it to exactly one copy.
+always_bcc = gianni@redazione.local
+
+# Every queued message goes through the tag/budget filter before delivery.
+# 172.28.0.7 is the mail-filter container's static IP on newsroom-net.
+content_filter = smtp:[172.28.0.7]:10025
+
+# Each mailbox may only be used as sender by its own authenticated login.
+smtpd_sender_login_maps = texthash:/tmp/docker-mailserver/sender-login-maps.cf
+
+# The delivery matrix (SPEC §6.3): sender -> restriction class -> allowed
+# recipients. Deterministic and dumb: violations bounce, bounces are counted.
+smtpd_restriction_classes = matrix_to_all, matrix_to_core, matrix_to_capo
+matrix_to_all = permit
+matrix_to_core = check_recipient_access texthash:/tmp/docker-mailserver/matrix-core-recipients.cf, reject
+matrix_to_capo = check_recipient_access texthash:/tmp/docker-mailserver/matrix-capo-recipients.cf, reject
+
+# reject_authenticated_sender_login_mismatch: an authenticated agent cannot
+# forge another agent's address. reject_unauthenticated_sender_login_mismatch:
+# newsroom addresses cannot be used at all without logging in (blocks matrix
+# bypass via unauthenticated port 25 from the Docker network).
+dms_smtpd_sender_restrictions = reject_authenticated_sender_login_mismatch, reject_unauthenticated_sender_login_mismatch, check_sender_access texthash:/tmp/docker-mailserver/sender-matrix.cf

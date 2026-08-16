@@ -1,0 +1,38 @@
+# =============================================================================
+#  menabò — an experiment in human-agent newsroom integration
+# -----------------------------------------------------------------------------
+#  File:     spark-a/mail-server/phase3/postfix-external.cf.example
+#  Purpose:  Phase-3 scaffolding ONLY (SPEC §6.5): outbound mail to a real
+#            external domain, held until the director releases it. NOT
+#            active — activating it is a deliberate, documented decision.
+#  Author:   Gianni Alessandroni
+#  Created:  2026-08-16
+#  License:  Apache-2.0 — see LICENSE
+#  Part of:  menabò https://github.com/GianniAlessandroni/menabo
+# =============================================================================
+
+# To activate (phase 3, NOT before):
+#   1. Choose the external domain and set it below.
+#   2. Configure the authenticated relay (smarthost) of your provider.
+#   3. Publish SPF, DKIM (ENABLE_OPENDKIM=1 + `setup config dkim`), DMARC.
+#   4. Append this file's content to config/postfix-main.cf.
+#   5. Every external message enters the `hold` queue; the director reviews
+#      with `postqueue -p` / `postcat -q <id>` and releases with
+#      `postsuper -H <id>` (or deletes with `postsuper -d <id>`).
+#   6. Restrict who may write outside via the allow-list map below.
+
+# relayhost = [smtp.example-provider.invalid]:587
+# smtp_sasl_auth_enable = yes
+# smtp_sasl_password_maps = texthash:/tmp/docker-mailserver/phase3-relay-credentials.cf
+# smtp_sasl_security_options = noanonymous
+# smtp_tls_security_level = encrypt
+
+# Hold everything addressed outside redazione.local until manually released:
+# smtpd_restriction_classes = matrix_to_all, matrix_to_core, matrix_to_capo, external_hold
+# external_hold = check_recipient_access texthash:/tmp/docker-mailserver/phase3-external-allowlist.cf, reject
+# transport_maps = texthash:/tmp/docker-mailserver/phase3-transport.cf
+#   (phase3-transport.cf:  external-domain.invalid  hold:)
+
+# Per-interlocutor allow-list (phase3-external-allowlist.cf):
+#   partner@example.invalid   HOLD
+#   *                         REJECT

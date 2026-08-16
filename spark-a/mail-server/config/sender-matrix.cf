@@ -1,0 +1,25 @@
+# =============================================================================
+#  menabò — an experiment in human-agent newsroom integration
+# -----------------------------------------------------------------------------
+#  File:     spark-a/mail-server/config/sender-matrix.cf
+#  Purpose:  Delivery-matrix map: sender address -> Postfix restriction class
+#            (classes defined in postfix-main.cf). SPEC §6.3.
+#  Author:   Gianni Alessandroni
+#  Created:  2026-08-16
+#  License:  Apache-2.0 — see LICENSE
+#  Part of:  menabò https://github.com/GianniAlessandroni/menabo
+# =============================================================================
+
+# The director and the caporedattore may write to everyone.
+gianni@redazione.local          matrix_to_all
+caporedattore@redazione.local   matrix_to_all
+
+# Working agents write to each other and to the caporedattore;
+# never to the director, never to the segreteria.
+cronista@redazione.local        matrix_to_core
+verificatore@redazione.local    matrix_to_core
+art-director@redazione.local    matrix_to_core
+impaginatore@redazione.local    matrix_to_core
+
+# The segreteria only ever reaches the caporedattore (phases 1-2).
+segreteria@redazione.local      matrix_to_capo
