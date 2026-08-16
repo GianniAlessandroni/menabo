@@ -16,3 +16,8 @@
 # note: Dovecot 2.3 name (DMS 15.1.0 ships 2.3.19); the 2.4+ rename
 # `auth_allow_cleartext` is unknown there and doveconf dies on it.
 disable_plaintext_auth = no
+
+# why: DMS forces `ssl = required` whenever SSL_TYPE is set, which rejects
+# cleartext auth on 143 with [PRIVACYREQUIRED] no matter what the setting
+# above says; `yes` keeps 993/STARTTLS served AND the cleartext path open.
+ssl = yes
