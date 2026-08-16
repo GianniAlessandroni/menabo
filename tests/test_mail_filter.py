@@ -19,11 +19,13 @@ from mail_filter import (
     Verdict,
     evaluate_subject,
     extract_tag,
+    grace_margin,
     has_service_flag,
     increment_hop,
 )
 
 BUDGET = 60
+HARD_LIMIT = BUDGET + grace_margin(BUDGET)
 
 
 def test_tag_extraction_finds_canonical_tag() -> None:
@@ -52,9 +54,21 @@ def test_tagged_mail_within_budget_is_accepted() -> None:
     assert evaluate_subject("[ART-2026-001] bozza", BUDGET - 1, BUDGET) is Verdict.ACCEPT
 
 
-def test_message_over_budget_freezes_thread() -> None:
-    # The 61st message on a tag (60 already accepted) trips the fuse.
-    assert evaluate_subject("[ART-2026-001] bozza", BUDGET, BUDGET) is Verdict.FREEZE
+def test_grace_margin_is_half_the_budget() -> None:
+    assert grace_margin(60) == 30
+    assert grace_margin(7) == 3
+
+
+def test_message_over_budget_enters_grace_zone_with_warning() -> None:
+    # The 61st message (60 already accepted) is still delivered, but warned.
+    assert evaluate_subject("[ART-2026-001] bozza", BUDGET, BUDGET) is Verdict.ACCEPT_WARN
+    # The whole grace zone keeps the ACCEPT_WARN verdict (warn-once is state's job).
+    assert evaluate_subject("[ART-2026-001] bozza", HARD_LIMIT - 1, BUDGET) is Verdict.ACCEPT_WARN
+
+
+def test_message_past_grace_margin_freezes_thread() -> None:
+    # The 91st message (60 budget + 30 grace already accepted) trips stage 2.
+    assert evaluate_subject("[ART-2026-001] bozza", HARD_LIMIT, BUDGET) is Verdict.FREEZE
 
 
 def test_hop_header_is_added_at_zero_when_absent() -> None:

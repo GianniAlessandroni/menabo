@@ -39,8 +39,18 @@ class Verdict(Enum):
     """Outcome of the subject/budget evaluation for one incoming message."""
 
     ACCEPT = "accept"
+    ACCEPT_WARN = "accept_warn"
     REJECT_NO_TAG = "reject_no_tag"
     FREEZE = "freeze"
+
+
+def grace_margin(budget: int) -> int:
+    """Grace margin of the two-stage fuse: 50% of the initial budget.
+
+    Fixed by design (director's decision, 2026-08-16): stage 1 warns the
+    caporedattore at ``budget``, stage 2 freezes at ``budget + budget // 2``.
+    """
+    return budget // 2
 
 
 def extract_tag(subject: str | None) -> str | None:
@@ -69,14 +79,18 @@ def evaluate_subject(subject: str | None, tag_message_count: int, budget: int) -
         budget: Message budget per article (``NEWSROOM_MESSAGE_BUDGET``).
 
     Returns:
-        ``ACCEPT``, ``REJECT_NO_TAG`` (no tag and no service flag), or
-        ``FREEZE`` (tag present but the budget is already exhausted).
+        ``ACCEPT``, ``REJECT_NO_TAG`` (no tag and no service flag),
+        ``ACCEPT_WARN`` (delivered, but the thread entered the grace zone —
+        the caller warns the caporedattore once), or ``FREEZE`` (grace margin
+        exhausted too: the thread is frozen for manual intervention).
     """
     tag = extract_tag(subject)
     if tag is None:
         return Verdict.ACCEPT if has_service_flag(subject) else Verdict.REJECT_NO_TAG
-    if tag_message_count >= budget:
+    if tag_message_count >= budget + grace_margin(budget):
         return Verdict.FREEZE
+    if tag_message_count >= budget:
+        return Verdict.ACCEPT_WARN
     return Verdict.ACCEPT
 
 

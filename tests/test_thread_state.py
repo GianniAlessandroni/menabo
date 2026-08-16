@@ -40,6 +40,13 @@ def test_freeze_returns_true_only_once(tmp_path: Path) -> None:
     assert state.frozen_threads() == [(TAG, "2026-08-16T10:00:00+00:00")]
 
 
+def test_warn_returns_true_only_once(tmp_path: Path) -> None:
+    state = make_state(tmp_path)
+    assert state.warn(TAG, "2026-08-16T09:00:00+00:00") is True
+    assert state.warn(TAG, "2026-08-16T09:05:00+00:00") is False
+    assert state.warned_threads() == [(TAG, "2026-08-16T09:00:00+00:00")]
+
+
 def test_thread_summary_returns_most_recent_messages_oldest_first(tmp_path: Path) -> None:
     state = make_state(tmp_path)
     for n in range(25):

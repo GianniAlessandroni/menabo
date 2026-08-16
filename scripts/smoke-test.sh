@@ -59,17 +59,29 @@ $MAIL await --user cronista@redazione.local --password "$MAIL_PASSWORD_CRONISTA"
 echo "OK bounce with reason came back to the sender"
 
 TAG2="[ART-2099-902]"
-step "5/9 message budget: the 61st mail is held and the director notified"
+step "5/9 two-stage budget fuse: warning at 60, freeze past the 50% grace margin"
 $MAIL flood --user cronista@redazione.local --password "$MAIL_PASSWORD_CRONISTA" \
     --mail-from cronista@redazione.local --rcpt verificatore@redazione.local \
     --subject "$TAG2 riempimento budget" --count 60
 $MAIL send --user cronista@redazione.local --password "$MAIL_PASSWORD_CRONISTA" \
     --mail-from cronista@redazione.local --rcpt verificatore@redazione.local \
-    --subject "$TAG2 messaggio oltre budget"
+    --subject "$TAG2 messaggio in zona di grazia"
+$MAIL await --user caporedattore@redazione.local --password "$MAIL_PASSWORD_CAPOREDATTORE" \
+    --subject-contains "margine di grazia" --timeout 120
+$MAIL await --user verificatore@redazione.local --password "$MAIL_PASSWORD_VERIFICATORE" \
+    --subject-contains "messaggio in zona di grazia" --timeout 60
+echo "OK stage 1: caporedattore warned, grace-zone mail still delivered"
+$MAIL flood --user cronista@redazione.local --password "$MAIL_PASSWORD_CRONISTA" \
+    --mail-from cronista@redazione.local --rcpt verificatore@redazione.local \
+    --subject "$TAG2 riempimento margine" --count 29
+$MAIL send --user cronista@redazione.local --password "$MAIL_PASSWORD_CRONISTA" \
+    --mail-from cronista@redazione.local --rcpt verificatore@redazione.local \
+    --subject "$TAG2 messaggio oltre margine"
 $MAIL await --user gianni@redazione.local --password "$MAIL_PASSWORD_GIANNI" \
     --subject-contains "Fusibile scattato" --timeout 180
 $MAIL await --user verificatore@redazione.local --password "$MAIL_PASSWORD_VERIFICATORE" \
-    --subject-contains "messaggio oltre budget" --expect-absent --timeout 20
+    --subject-contains "messaggio oltre margine" --expect-absent --timeout 20
+echo "OK stage 2: 91st message held, director notified"
 
 step "6/9 Garage upload + working presigned URL (from the cronista container)"
 # shellcheck disable=SC2016  # why: variables must expand inside the container
@@ -82,17 +94,18 @@ compose exec -T cronista bash -c '
 '
 echo "OK presigned URL served the object"
 
-step "7/9 WordPress: Contributor can draft, cannot publish"
+step "7/9 WordPress: impaginatore role can draft and upload media, cannot publish"
 wp_basic="$(grep '^WORDPRESS_MCP_BASIC_AUTH=' spark-a/agents/impaginatore/.env | cut -d= -f2)"
 wp_creds="$(printf '%s' "$wp_basic" | base64 -d)"
 draft_id="$($PY - "$wp_creds" "$STAGING_URL" <<'PYEOF'
 import json, sys, urllib.request, base64
 creds, base = sys.argv[1], sys.argv[2].rstrip("/")
 auth = base64.b64encode(creds.encode()).decode()
-def call(method, path, payload):
-    req = urllib.request.Request(base + path, method=method,
-        data=json.dumps(payload).encode(),
-        headers={"Authorization": "Basic " + auth, "Content-Type": "application/json"})
+def call(method, path, payload, content_type="application/json", extra=None):
+    data = payload if isinstance(payload, bytes) else json.dumps(payload).encode()
+    headers = {"Authorization": "Basic " + auth, "Content-Type": content_type}
+    headers.update(extra or {})
+    req = urllib.request.Request(base + path, method=method, data=data, headers=headers)
     try:
         with urllib.request.urlopen(req) as resp:
             return resp.status, json.loads(resp.read())
@@ -101,12 +114,18 @@ def call(method, path, payload):
 status, body = call("POST", "/wp-json/wp/v2/posts",
                     {"title": "smoke draft", "status": "draft"})
 assert status == 201, f"draft creation failed: HTTP {status}"
+png = base64.b64decode(
+    "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mP8"
+    "z8BQDwAEhQGAhKmMIQAAAABJRU5ErkJggg==")
+status, _ = call("POST", "/wp-json/wp/v2/media", png, content_type="image/png",
+                 extra={"Content-Disposition": 'attachment; filename="smoke.png"'})
+assert status == 201, f"media upload failed: HTTP {status} (upload_files missing?)"
 status, _ = call("POST", f"/wp-json/wp/v2/posts/{body['id']}", {"status": "publish"})
 assert status in (401, 403), f"publish was NOT blocked: HTTP {status}"
 print(body["id"])
 PYEOF
 )"
-echo "OK draft #$draft_id created; publish attempt was rejected (Contributor gate)"
+echo "OK draft #$draft_id + media upload accepted; publish attempt rejected (gate holds)"
 
 step "8/9 segreteria isolation: no services, only articles.json and email"
 for target in garage:3900 wordpress:80 searxng:8080; do

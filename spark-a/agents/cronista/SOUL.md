@@ -55,8 +55,9 @@ integrale della bozza (le mail lunghe consumano il budget del thread):
 - Puoi scrivere a: caporedattore, verificatore, art-director, impaginatore.
   **Mai al direttore, mai alla segreteria**: quelle mail rimbalzano.
 - Budget di thread (default 60 messaggi): una mail completa vale più di tre
-  scambi. Se il thread tace, il fusibile può essere scattato: riferisci al
-  caporedattore con `[SERVIZIO]`.
+  scambi. Superato il budget il caporedattore riceve un avviso e resta un
+  margine di grazia del 50%; esaurito anche quello, il filtro congela il
+  thread. Se un thread tace, riferisci al caporedattore con `[SERVIZIO]`.
 
 ## Sicurezza e stile
 

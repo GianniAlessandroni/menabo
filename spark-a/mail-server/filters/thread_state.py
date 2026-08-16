@@ -37,6 +37,10 @@ CREATE TABLE IF NOT EXISTS frozen_threads (
     tag       TEXT PRIMARY KEY,
     frozen_at TEXT NOT NULL
 );
+CREATE TABLE IF NOT EXISTS warned_threads (
+    tag       TEXT PRIMARY KEY,
+    warned_at TEXT NOT NULL
+);
 """
 
 
@@ -107,6 +111,26 @@ class ThreadState:
             "SELECT tag, frozen_at FROM frozen_threads ORDER BY frozen_at"
         ).fetchall()
         return [(str(tag), str(frozen_at)) for tag, frozen_at in rows]
+
+    def warn(self, tag: str, warned_at: str) -> bool:
+        """Mark ``tag`` as warned (stage 1); return True only on the first call.
+
+        The boolean drives notify-once semantics for the caporedattore
+        warning, mirroring :meth:`freeze` for the stage-2 fuse.
+        """
+        cursor = self._conn.execute(
+            "INSERT OR IGNORE INTO warned_threads (tag, warned_at) VALUES (?, ?)",
+            (tag, warned_at),
+        )
+        self._conn.commit()
+        return cursor.rowcount == 1
+
+    def warned_threads(self) -> list[tuple[str, str]]:
+        """Return all warned tags with their warning timestamps (for the collector)."""
+        rows = self._conn.execute(
+            "SELECT tag, warned_at FROM warned_threads ORDER BY warned_at"
+        ).fetchall()
+        return [(str(tag), str(warned_at)) for tag, warned_at in rows]
 
     def thread_summary(self, tag: str, limit: int = 20) -> list[ThreadEntry]:
         """Return the most recent ``limit`` messages on ``tag``, oldest first."""

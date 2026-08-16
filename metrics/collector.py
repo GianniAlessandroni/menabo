@@ -126,20 +126,34 @@ def collect_postfix_log(db: MetricsDb, log_path: Path, default_year: int) -> int
 
 
 def collect_fuse_events(db: MetricsDb, filter_state_db: Path) -> int:
-    """Store one `fusibile` event per frozen thread from the filter's state."""
+    """Store `fusibile` events from the filter's state: stage-1 warnings
+    (grace zone entered) and stage-2 freezes."""
     connection = sqlite3.connect(f"file:{filter_state_db}?mode=ro", uri=True)
     try:
-        rows = connection.execute("SELECT tag, frozen_at FROM frozen_threads").fetchall()
+        frozen = connection.execute("SELECT tag, frozen_at FROM frozen_threads").fetchall()
+        try:
+            warned = connection.execute("SELECT tag, warned_at FROM warned_threads").fetchall()
+        except sqlite3.OperationalError:
+            # State DBs written before the two-stage fuse have no warned table.
+            LOG.warning("filter state has no warned_threads table (pre two-stage fuse)")
+            warned = []
     finally:
         connection.close()
-    for tag, frozen_at in rows:
-        occurred_at = datetime.fromisoformat(str(frozen_at))
-        db.upsert_article(str(tag), None, occurred_at)
-        db.insert_event(
-            "fusibile", occurred_at, f"thread {tag} frozen over message budget",
-            str(tag), f"fuse:{tag}",
-        )
-    return len(rows)
+    stages = [
+        ("fuse-warn", "entered the grace zone (stage 1 warning)", warned),
+        ("fuse", "frozen over message budget (stage 2)", frozen),
+    ]
+    count = 0
+    for ref_prefix, description, rows in stages:
+        for tag, moment in rows:
+            occurred_at = datetime.fromisoformat(str(moment))
+            db.upsert_article(str(tag), None, occurred_at)
+            db.insert_event(
+                "fusibile", occurred_at, f"thread {tag} {description}",
+                str(tag), f"{ref_prefix}:{tag}",
+            )
+            count += 1
+    return count
 
 
 def collect_token_usage(db: MetricsDb, hermes_root: Path) -> int:

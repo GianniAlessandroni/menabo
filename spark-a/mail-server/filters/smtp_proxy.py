@@ -38,6 +38,7 @@ from mail_filter import (
     Verdict,
     evaluate_subject,
     extract_tag,
+    grace_margin,
     increment_hop,
 )
 from thread_state import ThreadEntry, ThreadState
@@ -61,6 +62,29 @@ class FilterConfig:
         self.state_dir = Path(_env("NEWSROOM_FILTER_STATE_DIR", "/var/lib/mail-filter"))
         self.director_address = _env("NEWSROOM_DIRECTOR_ADDRESS", "gianni@redazione.local")
         self.notifier_address = _env("NEWSROOM_FILTER_ADDRESS", "postmaster@redazione.local")
+        self.caporedattore_address = _env(
+            "NEWSROOM_CAPOREDATTORE_ADDRESS", "caporedattore@redazione.local"
+        )
+
+
+def build_warning_notification(
+    tag: str, budget: int, sender: str, caporedattore: str
+) -> EmailMessage:
+    """Build the Italian stage-1 warning for the caporedattore (grace zone)."""
+    grace = grace_margin(budget)
+    lines = [
+        f"Il thread {tag} ha raggiunto il budget di {budget} messaggi.",
+        f"Restano al massimo {grace} messaggi di margine di grazia: usali per",
+        "chiudere il thread (riassumi, decidi, consegna).",
+        f"Esaurito il margine ({budget + grace} messaggi totali) il filtro congela",
+        "il thread e da quel momento puo' sbloccarlo solo il direttore.",
+    ]
+    notification = EmailMessage()
+    notification["From"] = sender
+    notification["To"] = caporedattore
+    notification["Subject"] = f"[SERVIZIO] Budget superato: thread {tag} in margine di grazia"
+    notification.set_content("\n".join(lines))
+    return notification
 
 
 def build_freeze_notification(
@@ -131,6 +155,11 @@ class FilterHandler:
         if tag is not None:
             self._state.record_message(tag, sender, ", ".join(recipients), subject, now)
         self._reinject(sender, recipients, message)
+        if verdict is Verdict.ACCEPT_WARN:
+            assert tag is not None  # ACCEPT_WARN only exists for tagged mail
+            if self._state.warn(tag, now):
+                self._notify_caporedattore(tag)
+            LOG.warning("grace zone: tag=%s at %d messages", tag, count)
         LOG.info("accept: tag=%s hop=%d from=%s to=%s", tag, hop, sender, recipients)
         return "250 OK"
 
@@ -144,6 +173,18 @@ class FilterHandler:
     def _reinject(self, sender: str, recipients: list[str], message: Message) -> None:
         with smtplib.SMTP(self._config.reinject_host, self._config.reinject_port) as client:
             client.send_message(message, from_addr=sender, to_addrs=recipients)
+
+    def _notify_caporedattore(self, tag: str) -> None:
+        notification = build_warning_notification(
+            tag,
+            self._config.budget,
+            self._config.notifier_address,
+            self._config.caporedattore_address,
+        )
+        # always_bcc on the re-injection path copies this to the director too
+        self._reinject(
+            self._config.notifier_address, [self._config.caporedattore_address], notification
+        )
 
     def _notify_director(self, tag: str) -> None:
         notification = build_freeze_notification(
