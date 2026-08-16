@@ -1,0 +1,109 @@
+# =============================================================================
+#  menabò — an experiment in human-agent newsroom integration
+# -----------------------------------------------------------------------------
+#  File:     spark-b/docker-compose.yml
+#  Purpose:  Node B stack: verifier vLLM (multimodal Qwen3.6-27B) always on;
+#            ComfyUI + its MCP sidecar behind the optional `comfyui` profile.
+#  Author:   Gianni Alessandroni
+#  Created:  2026-08-16
+#  License:  Apache-2.0 — see LICENSE
+#  Part of:  menabò https://github.com/GianniAlessandroni/menabo
+# =============================================================================
+
+services:
+  vllm-verifier:
+    # why: the 27B NVFP4 checkpoint requires vLLM >= 0.24; v0.27.1 is the
+    # current stable with the SM121 FP4 fixes (unlike node A's frozen nightly)
+    image: vllm/vllm-openai:v0.27.1-aarch64
+    restart: unless-stopped
+    deploy:
+      resources:
+        reservations:
+          devices:
+            - driver: nvidia
+              count: all
+              capabilities: [gpu]
+    ipc: host
+    ulimits:
+      memlock:
+        soft: -1
+        hard: -1
+      stack:
+        soft: 67108864
+        hard: 67108864
+    environment:
+      - HF_HOME=/root/.cache/huggingface
+      - TOKENIZERS_PARALLELISM=false
+    volumes:
+      - ${VLLM_CACHE_ROOT:?}/huggingface:/root/.cache/huggingface
+      - ${VLLM_CACHE_ROOT:?}/vllm:/root/.cache/vllm
+    ports:
+      # why: LAN-published — the verifier-side agents live on node A
+      - "8000:8000"
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8000/health"]
+      interval: 90s
+      timeout: 10s
+      retries: 5
+      start_period: 600s
+    # Flags follow the official vLLM DGX Spark recipe for this checkpoint,
+    # scaled down to share the 128 GB unified pool with ComfyUI.
+    command:
+      - nvidia/Qwen3.6-27B-NVFP4
+      - --served-model-name=Qwen3.6-27B-NVFP4
+      - --host=0.0.0.0
+      - --port=8000
+      - --trust-remote-code
+      - --kv-cache-dtype=fp8
+      # why: leave headroom for ComfyUI on the same unified memory
+      - --gpu-memory-utilization=0.5
+      - --max-model-len=131072
+      - --max-num-seqs=4
+      - --max-num-batched-tokens=8192
+      - --enable-chunked-prefill
+      - --async-scheduling
+      - --enable-prefix-caching
+      # why: vision stays enabled — never pass --language-model-only here
+      - --limit-mm-per-prompt={"image":4}
+      - --speculative-config={"method":"mtp","num_speculative_tokens":3}
+      - --load-format=fastsafetensors
+      - --reasoning-parser=qwen3
+      - --tool-call-parser=qwen3_coder
+      - --enable-auto-tool-choice
+
+  comfyui:
+    # why: only prebuilt arm64+CUDA13/sm121 ComfyUI image line, DGX-Spark
+    # specific, refreshed monthly. SPEC asked for Qwen-Image 2.0: it has no
+    # open weights (API-only), so the newsroom runs Qwen-Image-2512 instead —
+    # documented in docs/RUNBOOK.it.md.
+    image: mmartial/comfyui-nvidia-docker:ubuntu24_cuda13.1-dgx-20260805
+    profiles: [comfyui]
+    restart: unless-stopped
+    deploy:
+      resources:
+        reservations:
+          devices:
+            - driver: nvidia
+              count: all
+              capabilities: [gpu]
+    environment:
+      - WANTED_UID=0
+      - WANTED_GID=0
+    volumes:
+      - ./comfyui/data:/comfy/mnt
+    ports:
+      # why: LAN-published for the MCP sidecar and the director's browser
+      - "8188:8188"
+
+  comfyui-mcp:
+    # why: MCP door to ComfyUI for the art-director (HTTP transport)
+    image: node:22.14.0-alpine
+    profiles: [comfyui]
+    restart: unless-stopped
+    environment:
+      - COMFYUI_URL=http://comfyui:8188
+    command: ["npx", "-y", "comfyui-mcp@0.51.56", "--http", "--port", "3001"]
+    ports:
+      - "3001:3001"
+    depends_on:
+      - comfyui
