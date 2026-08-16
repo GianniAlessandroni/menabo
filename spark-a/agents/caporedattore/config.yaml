@@ -1,0 +1,25 @@
+# =============================================================================
+#  menabò — an experiment in human-agent newsroom integration
+# -----------------------------------------------------------------------------
+#  File:     spark-a/agents/caporedattore/config.yaml
+#  Purpose:  Hermes runtime config for the caporedattore: writer endpoint,
+#            minimal toolset (terminal+file+memory), no MCP servers.
+#  Author:   Gianni Alessandroni
+#  Created:  2026-08-16
+#  License:  Apache-2.0 — see LICENSE
+#  Part of:  menabò https://github.com/GianniAlessandroni/menabo
+# =============================================================================
+
+model:
+  provider: custom
+  model: Qwen3.6-35B-A3B-NVFP4
+  base_url: http://vllm-writer:8000/v1
+  api_key: "none"
+
+# why: everything not listed is off (SPEC §5 "tutto il resto disattivato");
+# terminal drives himalaya + aws, file edits the public status file,
+# memory is explicitly granted to this agent only.
+toolsets:
+  - terminal
+  - file
+  - memory

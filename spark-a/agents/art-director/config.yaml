@@ -1,0 +1,29 @@
+# =============================================================================
+#  menabò — an experiment in human-agent newsroom integration
+# -----------------------------------------------------------------------------
+#  File:     spark-a/agents/art-director/config.yaml
+#  Purpose:  Hermes runtime config for the art-director: verifier endpoint
+#            (vision), terminal+file toolsets, ComfyUI via MCP.
+#  Author:   Gianni Alessandroni
+#  Created:  2026-08-16
+#  License:  Apache-2.0 — see LICENSE
+#  Part of:  menabò https://github.com/GianniAlessandroni/menabo
+# =============================================================================
+
+model:
+  provider: custom
+  model: Qwen3.6-27B-NVFP4
+  # why: vision-capable verifier on node B judges the generated images
+  base_url: ${VERIFIER_BASE_URL}
+  api_key: "none"
+
+# why: everything not listed is off (SPEC §5); no web — the art-director
+# researches nothing, it illustrates the brief it receives
+toolsets:
+  - terminal
+  - file
+
+mcp_servers:
+  comfyui:
+    # why: comfyui-mcp sidecar on node B (HTTP transport); host in .env
+    url: ${COMFYUI_MCP_URL}

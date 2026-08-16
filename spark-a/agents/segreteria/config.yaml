@@ -1,0 +1,24 @@
+# =============================================================================
+#  menabò — an experiment in human-agent newsroom integration
+# -----------------------------------------------------------------------------
+#  File:     spark-a/agents/segreteria/config.yaml
+#  Purpose:  Hermes runtime config for the segreteria: verifier endpoint,
+#            file toolset ONLY (read articles.json) — the trust boundary
+#            gets no terminal, no web, no MCP (SPEC §2.4).
+#  Author:   Gianni Alessandroni
+#  Created:  2026-08-16
+#  License:  Apache-2.0 — see LICENSE
+#  Part of:  menabò https://github.com/GianniAlessandroni/menabo
+# =============================================================================
+
+model:
+  provider: custom
+  model: Qwen3.6-27B-NVFP4
+  # why: node-B endpoint; frontier-net has LAN egress for exactly this
+  base_url: ${VERIFIER_BASE_URL}
+  api_key: "none"
+
+# why: the segreteria is the trust boundary — email (gateway) plus reading
+# its one mounted file; everything else stays off
+toolsets:
+  - file

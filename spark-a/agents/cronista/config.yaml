@@ -1,0 +1,24 @@
+# =============================================================================
+#  menabò — an experiment in human-agent newsroom integration
+# -----------------------------------------------------------------------------
+#  File:     spark-a/agents/cronista/config.yaml
+#  Purpose:  Hermes runtime config for the cronista: writer endpoint,
+#            terminal+web+file toolsets (SearXNG via curl, share via aws).
+#  Author:   Gianni Alessandroni
+#  Created:  2026-08-16
+#  License:  Apache-2.0 — see LICENSE
+#  Part of:  menabò https://github.com/GianniAlessandroni/menabo
+# =============================================================================
+
+model:
+  provider: custom
+  model: Qwen3.6-35B-A3B-NVFP4
+  base_url: http://vllm-writer:8000/v1
+  api_key: "none"
+
+# why: everything not listed is off (SPEC §5); web = fetch for reading
+# sources, terminal = himalaya/curl/aws, file = drafting locally
+toolsets:
+  - terminal
+  - web
+  - file

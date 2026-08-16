@@ -1,0 +1,34 @@
+# =============================================================================
+#  menabò — an experiment in human-agent newsroom integration
+# -----------------------------------------------------------------------------
+#  File:     spark-a/agents/Dockerfile
+#  Purpose:  Newsroom agent image: official Hermes Agent runtime plus the two
+#            CLIs the agents' skills need — himalaya (proactive SMTP) and
+#            the AWS CLI (Garage S3 shares, presigned URLs).
+#  Author:   Gianni Alessandroni
+#  Created:  2026-08-16
+#  License:  Apache-2.0 — see LICENSE
+#  Part of:  menabò https://github.com/GianniAlessandroni/menabo
+# =============================================================================
+
+FROM nousresearch/hermes-agent:v2026.8.13
+
+USER root
+
+# why: awscli talks S3 to Garage; curl/jq serve the SearXNG JSON API and the
+# public status file edits. Versions come from the pinned debian 13 base.
+RUN apt-get update \
+    && apt-get install -y --no-install-recommends awscli curl jq ca-certificates \
+    && rm -rf /var/lib/apt/lists/*
+
+# why: the bundled Hermes email skill drives the external himalaya CLI;
+# pinned release, aarch64 musl build (this stack is ARM64-only)
+ARG HIMALAYA_VERSION=v1.1.0
+RUN curl -fsSL -o /tmp/himalaya.tgz \
+      "https://github.com/pimalaya/himalaya/releases/download/${HIMALAYA_VERSION}/himalaya.aarch64-unknown-linux-musl.tgz" \
+    && tar -xzf /tmp/himalaya.tgz -C /usr/local/bin himalaya \
+    && chmod 0755 /usr/local/bin/himalaya \
+    && rm /tmp/himalaya.tgz
+
+# hermes runs as UID 10000 (image convention); never run agents as root
+USER hermes

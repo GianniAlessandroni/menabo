@@ -1,0 +1,25 @@
+# =============================================================================
+#  menabò — an experiment in human-agent newsroom integration
+# -----------------------------------------------------------------------------
+#  File:     spark-a/agents/verificatore/config.yaml
+#  Purpose:  Hermes runtime config for the verificatore: multimodal verifier
+#            endpoint on node B, terminal+web+file toolsets.
+#  Author:   Gianni Alessandroni
+#  Created:  2026-08-16
+#  License:  Apache-2.0 — see LICENSE
+#  Part of:  menabò https://github.com/GianniAlessandroni/menabo
+# =============================================================================
+
+model:
+  provider: custom
+  model: Qwen3.6-27B-NVFP4
+  # why: verifier vLLM runs on node B; host set in .env (VERIFIER_BASE_URL)
+  base_url: ${VERIFIER_BASE_URL}
+  api_key: "none"
+
+# why: everything not listed is off (SPEC §5); web = fetch for source
+# checking, terminal = himalaya/curl/aws, file = local notes
+toolsets:
+  - terminal
+  - web
+  - file

@@ -1,0 +1,31 @@
+# =============================================================================
+#  menabò — an experiment in human-agent newsroom integration
+# -----------------------------------------------------------------------------
+#  File:     spark-a/agents/impaginatore/config.yaml
+#  Purpose:  Hermes runtime config for the impaginatore: writer endpoint,
+#            terminal+file toolsets, WordPress via mcp-adapter (Contributor).
+#  Author:   Gianni Alessandroni
+#  Created:  2026-08-16
+#  License:  Apache-2.0 — see LICENSE
+#  Part of:  menabò https://github.com/GianniAlessandroni/menabo
+# =============================================================================
+
+model:
+  provider: custom
+  model: Qwen3.6-35B-A3B-NVFP4
+  base_url: http://vllm-writer:8000/v1
+  api_key: "none"
+
+# why: everything not listed is off (SPEC §5); no web — the impaginatore
+# lays out approved material, it does not research
+toolsets:
+  - terminal
+  - file
+
+mcp_servers:
+  wordpress:
+    # why: WordPress/mcp-adapter streamable-HTTP endpoint, internal name;
+    # auth = Application Password of the Contributor user (never wider)
+    url: http://wordpress:80/wp-json/mcp/mcp-adapter-default-server
+    headers:
+      Authorization: "Basic ${WORDPRESS_MCP_BASIC_AUTH}"
