@@ -53,13 +53,25 @@ else
     echo "setup-wordpress: mcp-adapter ${MCP_ADAPTER_VERSION} installed and activated."
 fi
 
-# The publication gate (SPEC §2.1): Contributor can draft, never publish.
+# The publication gate (SPEC §2.1): a dedicated role cloning Contributor
+# (create/edit own drafts, no publish_posts) plus upload_files, so the
+# newsroom delivers the COMPLETE article — text and images — as a draft.
+if wp role list --field=role | grep -qx impaginatore; then
+    echo "setup-wordpress: role impaginatore already exists, skipped."
+else
+    wp role create impaginatore "Impaginatore IA" --clone=contributor
+    echo "setup-wordpress: role impaginatore created (Contributor clone)."
+fi
+wp cap add impaginatore upload_files >/dev/null
+echo "setup-wordpress: capability upload_files ensured on role impaginatore."
+
 if wp user get impaginatore --field=user_login 2>/dev/null; then
-    echo "setup-wordpress: user impaginatore already exists, skipped."
+    wp user set-role impaginatore impaginatore
+    echo "setup-wordpress: user impaginatore already exists, role converged."
 else
     wp user create impaginatore impaginatore@redazione.local \
-        --role=contributor --user_pass="$(openssl rand -base64 24)" >/dev/null
-    echo "setup-wordpress: user impaginatore created with role Contributor."
+        --role=impaginatore --user_pass="$(openssl rand -base64 24)" >/dev/null
+    echo "setup-wordpress: user impaginatore created with role impaginatore."
 fi
 
 echo "setup-wordpress: creating a fresh Application Password for impaginatore..."

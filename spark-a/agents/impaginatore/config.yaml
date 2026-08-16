@@ -16,10 +16,11 @@ model:
   base_url: http://vllm-writer:8000/v1
   api_key: "none"
 
-# why: everything not listed is off (SPEC §5); no web — the impaginatore
-# lays out approved material, it does not research
+# why: everything not listed is off (SPEC §5); web is limited by SOUL.md to
+# fetching support images from the closed list of licensed sources
 toolsets:
   - terminal
+  - web
   - file
 
 mcp_servers:
