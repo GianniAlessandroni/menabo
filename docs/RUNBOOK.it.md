@@ -32,28 +32,35 @@ del repository, salvo dove indicato.
     docker compose up -d vllm-verifier
     docker compose --profile comfyui up -d    # opzionale: generazione immagini
 
-### Spark A — infrastruttura
+### Spark A — segreti e configurazioni
 
     cd spark-a
-    cp .env.example .env            # compilare TUTTE le password e SPARK_B_HOST
+    ../scripts/setup-env.sh         # 1ª esecuzione: crea .env con segreti casuali
+    # editare in spark-a/.env i soli valori host:
+    #   SPARK_B_HOST, STAGING_URL, VLLM_CACHE_ROOT
+    ../scripts/setup-env.sh         # 2ª esecuzione: genera i .env dei sei agenti
+
+Le password sono generate a caso e propagate automaticamente; nessun
+copia-incolla. I file `.env` esistenti non vengono mai sovrascritti.
+
+### Spark A — infrastruttura
+
     docker compose up -d vllm-writer mail-server mail-filter mariadb wordpress \
                          searxng valkey garage staging
 
 ### Provisioning (idempotente, ripetibile)
 
-    ../scripts/setup-mailboxes.sh   # crea le 7 caselle
-    ../scripts/setup-storage.sh     # layout Garage, 4 bucket, chiavi per agente
-    ../scripts/setup-wordpress.sh   # core WP, mcp-adapter, utente Contributor
+    ../scripts/setup-mailboxes.sh   # crea le 7 caselle (password dal .env)
+    ../scripts/setup-storage.sh     # layout Garage, 4 bucket, chiavi S3 per agente
+    ../scripts/setup-wordpress.sh   # core WP, mcp-adapter, ruolo impaginatore
 
-I due ultimi script **stampano credenziali una sola volta** (chiavi S3 e
-Application Password): incollarle subito nei rispettivi
-`spark-a/agents/<nome>/.env` (partendo dai `.env.example`).
+Gli ultimi due script **scrivono da soli le credenziali** (chiavi S3,
+Application Password MCP) nei `.env` degli agenti. Attenzione: Garage non
+rimostra mai i segreti — se cancelli un `.env` dopo la creazione delle
+chiavi, la chiave va eliminata e ricreata.
 
 ### Gli agenti
 
-    for a in caporedattore cronista verificatore art-director impaginatore segreteria; do
-        cp agents/$a/.env.example agents/$a/.env   # poi compilare
-    done
     docker compose up -d --build caporedattore cronista verificatore \
                                  art-director impaginatore segreteria
 

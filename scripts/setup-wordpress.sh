@@ -74,11 +74,21 @@ else
     echo "setup-wordpress: user impaginatore created with role impaginatore."
 fi
 
-echo "setup-wordpress: creating a fresh Application Password for impaginatore..."
+echo "setup-wordpress: rotating the hermes-mcp Application Password..."
+old_uuids="$(wp user application-password list impaginatore --fields=uuid,name --format=csv \
+    2>/dev/null | awk -F, '$2 == "hermes-mcp" {print $1}' || true)"
+for uuid in $old_uuids; do
+    wp user application-password delete impaginatore "$uuid" >/dev/null
+    echo "setup-wordpress: previous hermes-mcp password revoked."
+done
 app_password="$(wp user application-password create impaginatore hermes-mcp --porcelain)"
 basic_auth="$(printf 'impaginatore:%s' "$app_password" | base64 -w0)"
-echo
-echo "  Paste into spark-a/agents/impaginatore/.env:"
-echo "  WORDPRESS_MCP_BASIC_AUTH=${basic_auth}"
-echo
+env_file="agents/impaginatore/.env"
+if [[ -f "$env_file" ]]; then
+    sed -i "s|^WORDPRESS_MCP_BASIC_AUTH=.*|WORDPRESS_MCP_BASIC_AUTH=${basic_auth}|" "$env_file"
+    echo "setup-wordpress: MCP auth written into $env_file."
+else
+    echo "setup-wordpress: $env_file missing — paste this line there:"
+    echo "  WORDPRESS_MCP_BASIC_AUTH=${basic_auth}"
+fi
 echo "setup-wordpress: done."

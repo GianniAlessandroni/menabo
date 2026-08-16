@@ -54,8 +54,22 @@ for spec in "${KEY_SPECS[@]}"; do
     if grep -qF "$name" <<< "$keys"; then
         echo "setup-storage: key $name already exists, skipped (secret shown only at creation)."
     else
-        echo "setup-storage: creating key $name — paste these into spark-a/agents/$name/.env:"
-        garage key create "$name"
+        output="$(garage key create "$name")"
+        key_id="$(awk -F': *' '/Key ID/ {print $2}' <<< "$output" | tr -d '[:space:]')"
+        secret="$(awk -F': *' '/Secret key/ {print $2}' <<< "$output" | tr -d '[:space:]')"
+        env_file="agents/$name/.env"
+        if [[ -n "$key_id" && -n "$secret" && -f "$env_file" ]]; then
+            sed -i \
+                -e "s|^AWS_ACCESS_KEY_ID=.*|AWS_ACCESS_KEY_ID=${key_id}|" \
+                -e "s|^AWS_SECRET_ACCESS_KEY=.*|AWS_SECRET_ACCESS_KEY=${secret}|" \
+                "$env_file"
+            echo "setup-storage: key $name created and written into $env_file."
+        else
+            # Garage never re-shows secrets: surface them once, loudly.
+            echo "setup-storage: key $name created but NOT written ($env_file missing"
+            echo "setup-storage: or unexpected output) — copy it there manually:"
+            echo "$output"
+        fi
     fi
     IFS=',' read -ra rw_buckets <<< "$rw"
     for bucket in "${rw_buckets[@]:-}"; do

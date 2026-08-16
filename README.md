@@ -84,12 +84,14 @@ cd spark-b && cp .env.example .env && docker compose up -d
 docker compose --profile comfyui up -d          # image generation, optional
 
 # node A (everything else)
-cd spark-a && cp .env.example .env              # fill in secrets first
+cd spark-a
+../scripts/setup-env.sh                         # 1st run: generate secrets
+#   edit SPARK_B_HOST, STAGING_URL, VLLM_CACHE_ROOT in spark-a/.env
+../scripts/setup-env.sh                         # 2nd run: generate agent .envs
 docker compose up -d mail-server mail-filter mariadb wordpress searxng valkey garage staging vllm-writer
-../scripts/setup-mailboxes.sh
-../scripts/setup-storage.sh                     # prints per-agent S3 keys
-../scripts/setup-wordpress.sh                   # prints the MCP basic-auth
-# paste credentials into spark-a/agents/*/.env (from *.env.example)
+../scripts/setup-mailboxes.sh                   # 7 mailboxes from the .env
+../scripts/setup-storage.sh                     # S3 keys, written into agent .envs
+../scripts/setup-wordpress.sh                   # MCP auth, written into agent .env
 docker compose up -d --build caporedattore cronista verificatore art-director impaginatore segreteria
 
 # prove it works, end to end

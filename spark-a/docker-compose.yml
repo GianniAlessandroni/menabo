@@ -242,7 +242,11 @@ services:
     build: ./agents
     restart: unless-stopped
     networks: [newsroom-net]
-    env_file: ./agents/caporedattore/.env
+    # why: optional so compose commands on infra services work before
+    # scripts/setup-env.sh has generated the agent .env files
+    env_file:
+      - path: ./agents/caporedattore/.env
+        required: false
     volumes:
       - ./agents/caporedattore/hermes-home:/opt/data
       - ./agents/caporedattore/SOUL.md:/opt/data/SOUL.md:ro
@@ -255,7 +259,9 @@ services:
     build: ./agents
     restart: unless-stopped
     networks: [newsroom-net]
-    env_file: ./agents/cronista/.env
+    env_file:
+      - path: ./agents/cronista/.env
+        required: false
     volumes:
       - ./agents/cronista/hermes-home:/opt/data
       - ./agents/cronista/SOUL.md:/opt/data/SOUL.md:ro
@@ -266,7 +272,9 @@ services:
     build: ./agents
     restart: unless-stopped
     networks: [newsroom-net]
-    env_file: ./agents/verificatore/.env
+    env_file:
+      - path: ./agents/verificatore/.env
+        required: false
     volumes:
       - ./agents/verificatore/hermes-home:/opt/data
       - ./agents/verificatore/SOUL.md:/opt/data/SOUL.md:ro
@@ -277,7 +285,9 @@ services:
     build: ./agents
     restart: unless-stopped
     networks: [newsroom-net]
-    env_file: ./agents/art-director/.env
+    env_file:
+      - path: ./agents/art-director/.env
+        required: false
     volumes:
       - ./agents/art-director/hermes-home:/opt/data
       - ./agents/art-director/SOUL.md:/opt/data/SOUL.md:ro
@@ -288,7 +298,9 @@ services:
     build: ./agents
     restart: unless-stopped
     networks: [newsroom-net]
-    env_file: ./agents/impaginatore/.env
+    env_file:
+      - path: ./agents/impaginatore/.env
+        required: false
     volumes:
       - ./agents/impaginatore/hermes-home:/opt/data
       - ./agents/impaginatore/SOUL.md:/opt/data/SOUL.md:ro
@@ -300,7 +312,9 @@ services:
     restart: unless-stopped
     # why: trust boundary — frontier-net only; email is its single channel
     networks: [frontier-net]
-    env_file: ./agents/segreteria/.env
+    env_file:
+      - path: ./agents/segreteria/.env
+        required: false
     volumes:
       - ./agents/segreteria/hermes-home:/opt/data
       - ./agents/segreteria/SOUL.md:/opt/data/SOUL.md:ro
