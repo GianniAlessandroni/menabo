@@ -22,10 +22,11 @@ RUN apt-get update \
     && rm -rf /var/lib/apt/lists/*
 
 # why: the bundled Hermes email skill drives the external himalaya CLI;
-# pinned release, aarch64 musl build (this stack is ARM64-only)
+# pinned release, aarch64 build (this stack is ARM64-only). Release assets
+# use short platform names (himalaya.aarch64-linux.tgz), not target triples.
 ARG HIMALAYA_VERSION=v1.1.0
 RUN curl -fsSL -o /tmp/himalaya.tgz \
-      "https://github.com/pimalaya/himalaya/releases/download/${HIMALAYA_VERSION}/himalaya.aarch64-unknown-linux-musl.tgz" \
+      "https://github.com/pimalaya/himalaya/releases/download/${HIMALAYA_VERSION}/himalaya.aarch64-linux.tgz" \
     && tar -xzf /tmp/himalaya.tgz -C /usr/local/bin himalaya \
     && chmod 0755 /usr/local/bin/himalaya \
     && rm /tmp/himalaya.tgz
