@@ -27,6 +27,25 @@ compose() { docker compose -f spark-a/docker-compose.yml "$@"; }
 
 step() { echo; echo "=== SMOKE $1 ==="; }
 
+# Wait until the filter has counted <n> accepted messages for <tag>. A flood
+# returns when submission has QUEUED the mail, not when the filter has seen
+# it: without this barrier the boundary message can overtake part of the
+# flood and meet a counter below the fuse threshold.
+await_filter_count() { # <tag> <n>
+    for _ in $(seq 1 60); do
+        got="$(compose exec -T mail-filter python3 -c "import sqlite3
+print(sqlite3.connect('/var/lib/mail-filter/state.db').execute(
+    'SELECT COUNT(*) FROM thread_messages WHERE tag = ?', ('$1',)).fetchone()[0])")"
+        if [ "$got" -ge "$2" ]; then
+            echo "OK filter counted $got/$2 messages for $1"
+            return 0
+        fi
+        sleep 2
+    done
+    echo "FAIL filter stuck at $got/$2 messages for $1"
+    return 1
+}
+
 step "0/9 repo hygiene (headers)"
 scripts/check-headers.sh
 
@@ -94,11 +113,11 @@ $MAIL await --user cronista@redazione.local --password "$MAIL_PASSWORD_CRONISTA"
     --in-body --timeout 120
 echo "OK bounce with reason came back to the sender"
 
-TAG2="[ART-2099-902]"
 step "5/9 two-stage budget fuse: warning at 60, freeze past the 50% grace margin"
 $MAIL flood --user cronista@redazione.local --password "$MAIL_PASSWORD_CRONISTA" \
     --mail-from cronista@redazione.local --rcpt verificatore@redazione.local \
     --subject "$TAG2 riempimento budget" --count 60
+await_filter_count "$TAG2" 60
 $MAIL send --user cronista@redazione.local --password "$MAIL_PASSWORD_CRONISTA" \
     --mail-from cronista@redazione.local --rcpt verificatore@redazione.local \
     --subject "$TAG2 messaggio in zona di grazia"
@@ -110,6 +129,7 @@ echo "OK stage 1: caporedattore warned, grace-zone mail still delivered"
 $MAIL flood --user cronista@redazione.local --password "$MAIL_PASSWORD_CRONISTA" \
     --mail-from cronista@redazione.local --rcpt verificatore@redazione.local \
     --subject "$TAG2 riempimento margine" --count 29
+await_filter_count "$TAG2" 90
 $MAIL send --user cronista@redazione.local --password "$MAIL_PASSWORD_CRONISTA" \
     --mail-from cronista@redazione.local --rcpt verificatore@redazione.local \
     --subject "$TAG2 messaggio oltre margine"
