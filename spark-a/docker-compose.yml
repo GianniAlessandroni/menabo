@@ -243,8 +243,12 @@ services:
       - wordpress
 
   # --- the six agents (SPEC §2.6: one container = one agent = one folder) ---
+  # why: `gateway run` is the image's headless mode — the email gateway runs
+  # s6-supervised and the CMD stays alive as heartbeat. The image default is
+  # the interactive chat TUI, which exits without a terminal (restart loop).
   caporedattore:
     build: ./agents
+    command: ["gateway", "run"]
     restart: unless-stopped
     networks: [newsroom-net]
     # why: optional so compose commands on infra services work before
@@ -262,6 +266,7 @@ services:
 
   cronista:
     build: ./agents
+    command: ["gateway", "run"]
     restart: unless-stopped
     networks: [newsroom-net]
     env_file:
@@ -275,6 +280,7 @@ services:
 
   verificatore:
     build: ./agents
+    command: ["gateway", "run"]
     restart: unless-stopped
     networks: [newsroom-net]
     env_file:
@@ -288,6 +294,7 @@ services:
 
   art-director:
     build: ./agents
+    command: ["gateway", "run"]
     restart: unless-stopped
     networks: [newsroom-net]
     env_file:
@@ -301,6 +308,7 @@ services:
 
   impaginatore:
     build: ./agents
+    command: ["gateway", "run"]
     restart: unless-stopped
     networks: [newsroom-net]
     env_file:
@@ -314,6 +322,7 @@ services:
 
   segreteria:
     build: ./agents
+    command: ["gateway", "run"]
     restart: unless-stopped
     # why: trust boundary — frontier-net only; email is its single channel
     networks: [frontier-net]
