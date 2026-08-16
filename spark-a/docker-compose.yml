@@ -18,7 +18,12 @@ networks:
       config:
         # why: the filter's re-injection lock (user-patches.sh) needs a
         # deterministic subnet and a static IP for mail-filter.
+        # why: dynamic allocation is confined to the upper half so it can
+        # never claim the filter's static 172.28.0.7 first (start order is
+        # not deterministic; without this the last container to start fails
+        # with "Address already in use").
         - subnet: 172.28.0.0/24
+          ip_range: 172.28.0.128/25
   frontier-net:
     ipam:
       config:
