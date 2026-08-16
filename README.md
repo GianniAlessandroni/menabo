@@ -88,6 +88,7 @@ cd spark-a
 ../scripts/setup-env.sh                         # 1st run: generate secrets
 #   edit SPARK_B_HOST, STAGING_URL, VLLM_CACHE_ROOT in spark-a/.env
 ../scripts/setup-env.sh                         # 2nd run: generate agent .envs
+../scripts/setup-dirs.sh                        # data dirs with container-side owners
 docker compose up -d mail-server mail-filter mariadb wordpress searxng valkey garage staging vllm-writer
 ../scripts/setup-mailboxes.sh                   # 7 mailboxes from the .env
 ../scripts/setup-storage.sh                     # S3 keys, written into agent .envs

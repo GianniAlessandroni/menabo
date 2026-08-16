@@ -43,6 +43,15 @@ del repository, salvo dove indicato.
 Le password sono generate a caso e propagate automaticamente; nessun
 copia-incolla. I file `.env` esistenti non vengono mai sovrascritti.
 
+### Spark A — cartelle dati e permessi
+
+    ../scripts/setup-dirs.sh
+
+Crea le cartelle dati dei bind mount con il proprietario che i container si
+aspettano: gli agenti girano come uid 10000 (`hermes`) e WordPress come
+`www-data` — senza questo passaggio non possono scrivere nei propri volumi.
+Idempotente: si può rilanciare in qualsiasi momento (a container fermi).
+
 ### Spark A — infrastruttura
 
     docker compose up -d vllm-writer mail-server mail-filter mariadb wordpress \
@@ -135,6 +144,11 @@ tuo client copiandoli dagli `.eml`.
 
 - **Un container non parte**: `docker compose logs <servizio>`. I filtri e la
   matrice non hanno retry: un errore di config si vede subito nei log.
+- **`Permission denied` su `/opt/data` (agenti) o `wp-content` (WordPress)**:
+  proprietari sbagliati sulle cartelle dei bind mount. Fermare i container
+  coinvolti e rilanciare `../scripts/setup-dirs.sh` da `spark-a/`. Dopo il
+  restore da backup, rilanciarlo sempre: gli archivi tar non conservano gli
+  uid dei container.
 - **Restore completo**: i backup datati sono in `backups/`.
   1. `docker compose down` su Spark A;
   2. ripristinare le cartelle `spark-a/mail-server/data`, `spark-a/garage/{meta,data}`,
