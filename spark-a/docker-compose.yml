@@ -280,8 +280,13 @@ services:
   # the interactive chat TUI, which exits without a terminal (restart loop).
   caporedattore:
     build: ./agents
-    command: ["gateway", "run"]
+    command: ["gateway", "run", "-v"]
     restart: unless-stopped
+    environment:
+      # why: our mail-server stamps no Authentication-Results, and the
+      # adapter would drop every sender; trusting the From header is safe
+      # because the mail-filter rejects any From != authenticated envelope
+      - EMAIL_TRUST_FROM_HEADER=true
     networks: [newsroom-net]
     # why: optional so compose commands on infra services work before
     # scripts/setup-env.sh has generated the agent .env files
@@ -298,8 +303,13 @@ services:
 
   cronista:
     build: ./agents
-    command: ["gateway", "run"]
+    command: ["gateway", "run", "-v"]
     restart: unless-stopped
+    environment:
+      # why: our mail-server stamps no Authentication-Results, and the
+      # adapter would drop every sender; trusting the From header is safe
+      # because the mail-filter rejects any From != authenticated envelope
+      - EMAIL_TRUST_FROM_HEADER=true
     networks: [newsroom-net]
     env_file:
       - path: ./agents/cronista/.env
@@ -312,8 +322,13 @@ services:
 
   verificatore:
     build: ./agents
-    command: ["gateway", "run"]
+    command: ["gateway", "run", "-v"]
     restart: unless-stopped
+    environment:
+      # why: our mail-server stamps no Authentication-Results, and the
+      # adapter would drop every sender; trusting the From header is safe
+      # because the mail-filter rejects any From != authenticated envelope
+      - EMAIL_TRUST_FROM_HEADER=true
     networks: [newsroom-net]
     env_file:
       - path: ./agents/verificatore/.env
@@ -326,8 +341,13 @@ services:
 
   art-director:
     build: ./agents
-    command: ["gateway", "run"]
+    command: ["gateway", "run", "-v"]
     restart: unless-stopped
+    environment:
+      # why: our mail-server stamps no Authentication-Results, and the
+      # adapter would drop every sender; trusting the From header is safe
+      # because the mail-filter rejects any From != authenticated envelope
+      - EMAIL_TRUST_FROM_HEADER=true
     networks: [newsroom-net]
     env_file:
       - path: ./agents/art-director/.env
@@ -340,8 +360,13 @@ services:
 
   impaginatore:
     build: ./agents
-    command: ["gateway", "run"]
+    command: ["gateway", "run", "-v"]
     restart: unless-stopped
+    environment:
+      # why: our mail-server stamps no Authentication-Results, and the
+      # adapter would drop every sender; trusting the From header is safe
+      # because the mail-filter rejects any From != authenticated envelope
+      - EMAIL_TRUST_FROM_HEADER=true
     networks: [newsroom-net]
     env_file:
       - path: ./agents/impaginatore/.env
@@ -354,8 +379,13 @@ services:
 
   segreteria:
     build: ./agents
-    command: ["gateway", "run"]
+    command: ["gateway", "run", "-v"]
     restart: unless-stopped
+    environment:
+      # why: our mail-server stamps no Authentication-Results, and the
+      # adapter would drop every sender; trusting the From header is safe
+      # because the mail-filter rejects any From != authenticated envelope
+      - EMAIL_TRUST_FROM_HEADER=true
     # why: trust boundary — frontier-net only; email is its single channel
     networks: [frontier-net]
     env_file:

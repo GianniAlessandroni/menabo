@@ -19,6 +19,7 @@ from mail_filter import (
     Verdict,
     evaluate_subject,
     extract_tag,
+    from_matches_sender,
     grace_margin,
     has_service_flag,
     increment_hop,
@@ -89,3 +90,20 @@ def test_malformed_hop_header_is_reset_to_zero() -> None:
     message[HOP_HEADER] = "not-a-number"
     assert increment_hop(message) == 0
     assert message[HOP_HEADER] == "0"
+
+
+def test_from_matches_sender_accepts_exact_and_display_name_forms() -> None:
+    assert from_matches_sender("cronista@redazione.local", "cronista@redazione.local")
+    assert from_matches_sender(
+        "Cronista IA <cronista@redazione.local>", "cronista@redazione.local"
+    )
+    assert from_matches_sender("CRONISTA@redazione.local", "cronista@redazione.local")
+
+
+def test_from_matches_sender_rejects_forged_missing_and_unparsable_from() -> None:
+    assert not from_matches_sender("gianni@redazione.local", "cronista@redazione.local")
+    assert not from_matches_sender(
+        "Direttore <gianni@redazione.local>", "cronista@redazione.local"
+    )
+    assert not from_matches_sender(None, "cronista@redazione.local")
+    assert not from_matches_sender("not-an-address", "cronista@redazione.local")

@@ -34,10 +34,12 @@ from typing import Any
 from aiosmtpd.controller import Controller
 from aiosmtpd.smtp import SMTP, Envelope, Session
 from mail_filter import (
+    REJECT_REASON_FROM_MISMATCH,
     REJECT_REASON_NO_TAG,
     Verdict,
     evaluate_subject,
     extract_tag,
+    from_matches_sender,
     grace_margin,
     increment_hop,
 )
@@ -139,6 +141,16 @@ class FilterHandler:
             self._reinject(sender, recipients, message)
             LOG.info("accept (bounce): to=%s subject=%r", recipients, subject)
             return "250 OK"
+
+        # The From header must be the authenticated envelope sender: agents
+        # write their own headers (himalaya), and the Hermes adapters trust
+        # the From header on the strength of this very check.
+        if not from_matches_sender(message.get("From"), sender):
+            LOG.info(
+                "reject (from mismatch): envelope=%s from=%r to=%s",
+                sender, str(message.get("From", "")), recipients,
+            )
+            return f"550 {REJECT_REASON_FROM_MISMATCH}"
 
         tag = extract_tag(subject)
         count = self._state.message_count(tag) if tag else 0

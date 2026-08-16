@@ -22,6 +22,7 @@ from __future__ import annotations
 
 import re
 from email.message import Message
+from email.utils import parseaddr
 from enum import Enum
 
 TAG_PATTERN = re.compile(r"\[ART-\d{4}-\d{3}\]")
@@ -33,6 +34,27 @@ REJECT_REASON_NO_TAG = (
     "5.7.1 Oggetto senza tag articolo [ART-AAAA-NNN] e senza flag [SERVIZIO]: "
     "aggiungere il tag e reinviare."
 )
+REJECT_REASON_FROM_MISMATCH = (
+    "5.7.1 Header From diverso dal mittente autenticato: firmarsi con il "
+    "proprio indirizzo e reinviare."
+)
+
+
+def from_matches_sender(from_header: str | None, envelope_sender: str) -> bool:
+    """Return True when the From header address equals the envelope sender.
+
+    Postfix binds the envelope sender to the SASL login (sender-login maps),
+    but the From HEADER is free text written by the client — and the agents
+    write their own headers through himalaya. Enforcing header == envelope
+    here is what makes the Hermes adapters safe to trust the From header
+    (EMAIL_TRUST_FROM_HEADER: our server stamps no Authentication-Results).
+    Comparison is case-insensitive on the whole address; a missing or
+    unparsable From header never matches — it must bounce, not be guessed at.
+    """
+    if from_header is None:
+        return False
+    address = parseaddr(from_header)[1]
+    return bool(address) and address.lower() == envelope_sender.lower()
 
 
 class Verdict(Enum):

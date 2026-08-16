@@ -183,6 +183,7 @@ tuo client copiandoli dagli `.eml`.
 
 | Tema | Stato |
 |---|---|
+| **Autenticità del From** | Il mail-server non timbra `Authentication-Results` (rspamd/DKIM spenti di proposito), quindi l'adapter Hermes scarterebbe ogni mittente. Gli agenti girano con `EMAIL_TRUST_FROM_HEADER=true`, ed è sicuro perché il filtro rifiuta ogni messaggio il cui header `From` non coincide con il mittente busta autenticato (che Postfix lega al login SASL). |
 | **TLS interno** | Il piano era: spento in fase 1-2 (rete isolata). L'adapter email di Hermes però rifiuta il chiaro (IMAP solo TLS implicito, SMTP con STARTTLS verificato), quindi la posta è **dual-mode**: CA interna (`setup-tls.sh`), agenti su 993/STARTTLS-587, mentre 143 e la AUTH in chiaro su 587 restano per il client del direttore e lo smoke test. |
 | **Qwen-Image 2.0** | Non ha pesi pubblici (solo API): lo spike ha sostituito con **Qwen-Image-2512** (pesi aperti, supporto ComfyUI nativo, template "Qwen-Image-2512"; file fp8 da Comfy-Org in `models/`). |
 | **vLLM su Spark A** | Tag `cu130-nightly` congelato de-facto (non più aggiornato): è la configurazione provata su questo nodo. Percorso di upgrade: `v0.27.1(-aarch64)`; se l'output MoE degrada, fallback `--moe-backend=marlin`. |
