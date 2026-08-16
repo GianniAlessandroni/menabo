@@ -71,20 +71,27 @@ def cmd_flood(args: argparse.Namespace) -> int:
     return 0
 
 
-def _search_inbox(user: str, password: str, subject_part: str, from_part: str | None) -> (
-    email.message.Message | None
-):
+def _search_inbox(
+    user: str, password: str, subject_part: str, from_part: str | None, in_body: bool = False
+) -> email.message.Message | None:
+    # in_body: match subject_part anywhere in the raw message instead of the
+    # Subject header — bounces carry the original subject only inside the
+    # attached original message ("Undelivered Mail Returned to Sender").
+    section = "(BODY.PEEK[])" if in_body else "(BODY.PEEK[HEADER])"
     with imaplib.IMAP4(HOST, IMAP_PORT) as client:
         client.login(user, password)
         client.select("INBOX", readonly=True)
         _, data = client.search(None, "ALL")
         for uid in reversed(data[0].split()):
-            _, fetched = client.fetch(uid, "(BODY.PEEK[HEADER])")
+            _, fetched = client.fetch(uid, section)
             payload = fetched[0]
             if not isinstance(payload, tuple):
                 continue
             message = email.message_from_bytes(payload[1])
-            if subject_part not in str(message.get("Subject", "")):
+            if in_body:
+                if subject_part not in payload[1].decode("utf-8", errors="replace"):
+                    continue
+            elif subject_part not in str(message.get("Subject", "")):
                 continue
             if from_part and from_part not in str(message.get("From", "")):
                 continue
@@ -97,7 +104,9 @@ def cmd_await(args: argparse.Namespace) -> int:
     deadline = time.monotonic() + args.timeout
     found: email.message.Message | None = None
     while time.monotonic() < deadline:
-        found = _search_inbox(args.user, args.password, args.subject_contains, args.from_contains)
+        found = _search_inbox(
+            args.user, args.password, args.subject_contains, args.from_contains, args.in_body
+        )
         if found is not None:
             break
         time.sleep(3)
@@ -151,6 +160,7 @@ def main() -> int:
     await_parser.add_argument("--timeout", type=int, default=90)
     await_parser.add_argument("--expect-hop", type=int, default=None)
     await_parser.add_argument("--expect-absent", action="store_true")
+    await_parser.add_argument("--in-body", action="store_true")
     await_parser.set_defaults(handler=cmd_await)
 
     args = parser.parse_args()

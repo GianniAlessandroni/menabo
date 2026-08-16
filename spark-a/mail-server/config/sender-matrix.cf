@@ -23,3 +23,10 @@ impaginatore@redazione.local    matrix_to_core
 
 # The segreteria only ever reaches the caporedattore (phases 1-2).
 segreteria@redazione.local      matrix_to_capo
+
+# The null sender (<> is Postfix's lookup key for it) is refused on every
+# smtpd session: real bounces are queued internally by Postfix and never
+# cross smtpd, so anything claiming <> on 25/587 is a container spoofing a
+# bounce to slip past the sender-keyed matrix. The re-injection listener
+# on 10026 clears sender restrictions, so filtered bounces still flow.
+<>                              REJECT bounce spoofing refused

@@ -87,8 +87,11 @@ step "4/9 mail without tag bounces with a readable reason"
 $MAIL send --user cronista@redazione.local --password "$MAIL_PASSWORD_CRONISTA" \
     --mail-from cronista@redazione.local --rcpt verificatore@redazione.local \
     --subject "prova senza etichetta $NONCE"
+# why: the bounce's own subject is "Undelivered Mail Returned to Sender";
+# the nonce only appears in the attached original, hence --in-body.
 $MAIL await --user cronista@redazione.local --password "$MAIL_PASSWORD_CRONISTA" \
-    --subject-contains "prova senza etichetta $NONCE" --from-contains "MAILER-DAEMON" --timeout 120
+    --subject-contains "prova senza etichetta $NONCE" --from-contains "MAILER-DAEMON" \
+    --in-body --timeout 120
 echo "OK bounce with reason came back to the sender"
 
 TAG2="[ART-2099-902]"

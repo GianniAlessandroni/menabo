@@ -129,6 +129,17 @@ class FilterHandler:
         sender = envelope.mail_from or ""
         recipients = list(envelope.rcpt_tos)
 
+        # Bounces (null envelope sender) pass through untouched: rejecting
+        # them for the missing tag would double-bounce to postmaster and the
+        # violating sender would never see the readable reason (SPEC §6.3 —
+        # violations bounce visibly, bounces are data). Spoofed null-sender
+        # mail cannot reach this filter: smtpd rejects <> on 25/587
+        # (sender-matrix.cf) and only postfix-generated bounces are queued.
+        if not sender:
+            self._reinject(sender, recipients, message)
+            LOG.info("accept (bounce): to=%s subject=%r", recipients, subject)
+            return "250 OK"
+
         tag = extract_tag(subject)
         count = self._state.message_count(tag) if tag else 0
         verdict = evaluate_subject(subject, count, self._config.budget)
