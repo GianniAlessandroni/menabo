@@ -12,4 +12,6 @@
 
 # why: phase 1-2 has no internet exposure and no TLS; the Hermes email
 # adapter polls IMAP on 143 in cleartext. Phase 3 must revisit this.
-auth_allow_cleartext = yes
+# note: Dovecot 2.3 name (DMS 15.1.0 ships 2.3.19); the 2.4+ rename
+# `auth_allow_cleartext` is unknown there and doveconf dies on it.
+disable_plaintext_auth = no
