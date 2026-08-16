@@ -13,7 +13,7 @@
 # =============================================================================
 set -euo pipefail
 
-mariadb --protocol=socket -uroot <<SQL
+mariadb --protocol=socket -uroot -p"${MARIADB_ROOT_PASSWORD}" <<SQL
 CREATE DATABASE IF NOT EXISTS wordpress CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
 CREATE USER IF NOT EXISTS 'wordpress'@'%' IDENTIFIED BY '${WORDPRESS_DB_PASSWORD}';
 GRANT ALL PRIVILEGES ON wordpress.* TO 'wordpress'@'%';
@@ -29,5 +29,5 @@ echo "10-databases.sh: wordpress and metrics databases provisioned."
 
 # The canonical schema lives in metrics/schema.sql (mounted read-only here);
 # it is self-contained (CREATE DATABASE IF NOT EXISTS + USE metrics).
-mariadb --protocol=socket -uroot < /opt/menabo/metrics-schema.sql
+mariadb --protocol=socket -uroot -p"${MARIADB_ROOT_PASSWORD}" < /opt/menabo/metrics-schema.sql
 echo "10-databases.sh: metrics schema applied."
