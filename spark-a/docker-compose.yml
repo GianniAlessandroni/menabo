@@ -77,8 +77,9 @@ services:
       # SM121 fallback is --moe-backend=marlin (see RUNBOOK).
       - --moe-backend=flashinfer_cutlass
       - --tensor-parallel-size=1
-      # why: fraction of the 128 GB unified pool shared with everything else
-      - --gpu-memory-utilization=0.40
+      # why: node A's infra is memory-light (~7 GB), so the writer takes a
+      # larger share of the 128 GB pool for KV cache and longer contexts
+      - --gpu-memory-utilization=0.55
       - --max-model-len=131072
       - --max-num-seqs=32
       - --max-num-batched-tokens=32768
