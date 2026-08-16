@@ -1,0 +1,28 @@
+# =============================================================================
+#  menabò — an experiment in human-agent newsroom integration
+# -----------------------------------------------------------------------------
+#  File:     spark-a/searxng/settings.yml
+#  Purpose:  SearXNG settings: JSON API for the agents, Valkey-backed
+#            limiter, internal-network-only deployment.
+#  Author:   Gianni Alessandroni
+#  Created:  2026-08-16
+#  License:  Apache-2.0 — see LICENSE
+#  Part of:  menabò https://github.com/GianniAlessandroni/menabo
+# =============================================================================
+
+use_default_settings: true
+
+server:
+  # why: real value comes from the SEARXNG_SECRET environment variable
+  secret_key: "overridden-by-environment"
+  limiter: false
+  public_instance: false
+
+search:
+  # why: the agents consume the JSON API (format=json), humans get html
+  formats:
+    - html
+    - json
+
+valkey:
+  url: valkey://valkey:6379/0

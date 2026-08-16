@@ -1,0 +1,28 @@
+# =============================================================================
+#  menabò — an experiment in human-agent newsroom integration
+# -----------------------------------------------------------------------------
+#  File:     spark-a/garage/garage.toml
+#  Purpose:  Garage S3 store, single node: buckets piani/bozze/immagini/
+#            pubblicati with per-agent keys (provisioned by setup-storage.sh).
+#  Author:   Gianni Alessandroni
+#  Created:  2026-08-16
+#  License:  Apache-2.0 — see LICENSE
+#  Part of:  menabò https://github.com/GianniAlessandroni/menabo
+# =============================================================================
+
+metadata_dir = "/var/lib/garage/meta"
+data_dir = "/var/lib/garage/data"
+
+replication_factor = 1
+
+rpc_bind_addr = "[::]:3901"
+# rpc_secret comes from the GARAGE_RPC_SECRET environment variable
+
+[s3_api]
+s3_region = "garage"
+api_bind_addr = "[::]:3900"
+root_domain = ".s3.garage.local"
+
+[s3_web]
+bind_addr = "[::]:3902"
+root_domain = ".web.garage.local"

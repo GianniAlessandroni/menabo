@@ -1,0 +1,307 @@
+# =============================================================================
+#  menabò — an experiment in human-agent newsroom integration
+# -----------------------------------------------------------------------------
+#  File:     spark-a/docker-compose.yml
+#  Purpose:  Node A stack: writer LLM, mailserver + content filter, MariaDB,
+#            WordPress, SearXNG, Garage, staging nginx and the six agents.
+#            Networks: newsroom-net (everything) and frontier-net (segreteria
+#            + mailserver only) — the segreteria trust boundary (SPEC §2.4).
+#  Author:   Gianni Alessandroni
+#  Created:  2026-08-16
+#  License:  Apache-2.0 — see LICENSE
+#  Part of:  menabò https://github.com/GianniAlessandroni/menabo
+# =============================================================================
+
+networks:
+  newsroom-net:
+    ipam:
+      config:
+        # why: the filter's re-injection lock (user-patches.sh) needs a
+        # deterministic subnet and a static IP for mail-filter.
+        - subnet: 172.28.0.0/24
+  frontier-net:
+    ipam:
+      config:
+        - subnet: 172.29.0.0/24
+
+services:
+  # --- inference ------------------------------------------------------------
+  vllm-writer:
+    # why: cu130-nightly is the tag proven on this GB10 node (owner-tested);
+    # it is no longer updated upstream, so it is frozen in practice. The
+    # upgrade path (v0.27.1) is documented in docs/RUNBOOK.it.md.
+    image: vllm/vllm-openai:cu130-nightly
+    restart: unless-stopped
+    networks: [newsroom-net]
+    deploy:
+      resources:
+        reservations:
+          devices:
+            - driver: nvidia
+              count: all
+              capabilities: [gpu]
+    ipc: host
+    ulimits:
+      memlock:
+        soft: -1
+        hard: -1
+      stack:
+        soft: 67108864
+        hard: 67108864
+    environment:
+      - HF_HOME=/root/.cache/huggingface
+      - TOKENIZERS_PARALLELISM=false
+    volumes:
+      - ${VLLM_CACHE_ROOT:?}/huggingface:/root/.cache/huggingface
+      - ${VLLM_CACHE_ROOT:?}/vllm:/root/.cache/vllm
+      - ${VLLM_CACHE_ROOT:?}/torchinductor_root:/tmp/torchinductor_root
+    ports:
+      # why: loopback only — the smoke test probes from the host; agents use
+      # the Docker network. Only one vLLM runs on this node, so the SPEC's
+      # startup flock mutex is unnecessary here (single instance).
+      - "127.0.0.1:8000:8000"
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8000/health"]
+      interval: 90s
+      timeout: 10s
+      retries: 5
+      start_period: 600s
+    command:
+      - RedHatAI/Qwen3.6-35B-A3B-NVFP4
+      - --served-model-name=Qwen3.6-35B-A3B-NVFP4
+      - --host=0.0.0.0
+      - --port=8000
+      - --quantization=compressed-tensors
+      - --language-model-only
+      # why: owner-tested on this node; if output degrades, the documented
+      # SM121 fallback is --moe-backend=marlin (see RUNBOOK).
+      - --moe-backend=flashinfer_cutlass
+      - --tensor-parallel-size=1
+      # why: fraction of the 128 GB unified pool shared with everything else
+      - --gpu-memory-utilization=0.40
+      - --max-model-len=131072
+      - --max-num-seqs=32
+      - --max-num-batched-tokens=32768
+      - --kv-cache-dtype=fp8_e4m3
+      - --enable-chunked-prefill
+      - --enable-prefix-caching
+      - --speculative-config={"method":"mtp","num_speculative_tokens":1}
+      - --reasoning-parser=qwen3
+      - --enable-auto-tool-choice
+      - --tool-call-parser=qwen3_coder
+      - --default-chat-template-kwargs={"preserve_thinking":true}
+      - --limit-mm-per-prompt={"image":0,"video":0,"audio":0}
+      - --generation-config=vllm
+      - --override-generation-config={"temperature":0.6,"top_p":0.80,"top_k":20,"presence_penalty":0.0,"repetition_penalty":1.0}
+      - --trust-remote-code
+      - --safetensors-load-strategy=prefetch
+
+  # --- mail -----------------------------------------------------------------
+  mail-server:
+    image: mailserver/docker-mailserver:15.1.0
+    hostname: mail.redazione.local
+    restart: unless-stopped
+    # why: the only service on both networks — the segreteria's sole channel
+    networks: [newsroom-net, frontier-net]
+    ports:
+      # why: LAN access for the director's mail client only
+      - "143:143"
+      - "587:587"
+    volumes:
+      - ./mail-server/data/mail-data:/var/mail
+      - ./mail-server/data/mail-state:/var/mail-state
+      - ./mail-server/data/mail-logs:/var/log/mail
+      - ./mail-server/config:/tmp/docker-mailserver
+    environment:
+      - TZ=${TZ:-Europe/Rome}
+      # why: matrix + login enforcement is hand-written in postfix-main.cf;
+      # DMS's own spoof protection would double-configure the same knobs
+      - SPOOF_PROTECTION=0
+      - PERMIT_DOCKER=none
+      - ENABLE_RSPAMD=0
+      - ENABLE_CLAMAV=0
+      - ENABLE_AMAVIS=0
+      - ENABLE_OPENDKIM=0
+      - ENABLE_OPENDMARC=0
+      - ENABLE_POLICYD_SPF=0
+      # why: phase 1-2 runs cleartext on the isolated network (see RUNBOOK)
+      - SSL_TYPE=
+    healthcheck:
+      test: ["CMD", "ss", "-lntp", "|", "grep", ":25"]
+      interval: 30s
+      timeout: 5s
+      retries: 5
+
+  mail-filter:
+    build: ./mail-server/filters
+    restart: unless-stopped
+    networks:
+      newsroom-net:
+        # why: postfix-main.cf and user-patches.sh pin this address
+        ipv4_address: 172.28.0.7
+    environment:
+      - NEWSROOM_MESSAGE_BUDGET=${NEWSROOM_MESSAGE_BUDGET:-60}
+      - NEWSROOM_REINJECT_HOST=mail-server
+      - NEWSROOM_REINJECT_PORT=10026
+      - NEWSROOM_DIRECTOR_ADDRESS=gianni@redazione.local
+      - NEWSROOM_FILTER_ADDRESS=postmaster@redazione.local
+    volumes:
+      - ./mail-server/state:/var/lib/mail-filter
+    depends_on:
+      - mail-server
+
+  # --- storage & data -------------------------------------------------------
+  mariadb:
+    # why: 11.8 is the mature LTS; 12.3 LTS GA'd only weeks ago (2026-08)
+    image: mariadb:11.8.8
+    restart: unless-stopped
+    networks: [newsroom-net]
+    ports:
+      # why: loopback only — host-run collector, quality CLI and backup
+      - "127.0.0.1:3306:3306"
+    environment:
+      - MARIADB_ROOT_PASSWORD=${MARIADB_ROOT_PASSWORD:?}
+      - WORDPRESS_DB_PASSWORD=${WORDPRESS_DB_PASSWORD:?}
+      - METRICS_DB_PASSWORD=${METRICS_DB_PASSWORD:?}
+      - TZ=${TZ:-Europe/Rome}
+    volumes:
+      - ./mariadb/data:/var/lib/mysql
+      - ./mariadb/init:/docker-entrypoint-initdb.d:ro
+      # why: schema applied at first boot; later changes via metrics/migrations/
+      - ../metrics/schema.sql:/docker-entrypoint-initdb.d/20-metrics-schema.sql:ro
+
+  wordpress:
+    image: wordpress:7.0.4-php8.4-apache
+    restart: unless-stopped
+    # why: not published on the host — the director browses via the staging
+    # nginx; the impaginatore uses the internal name through mcp-adapter
+    networks: [newsroom-net]
+    environment:
+      - WORDPRESS_DB_HOST=mariadb
+      - WORDPRESS_DB_NAME=wordpress
+      - WORDPRESS_DB_USER=wordpress
+      - WORDPRESS_DB_PASSWORD=${WORDPRESS_DB_PASSWORD:?}
+      - WORDPRESS_CONFIG_EXTRA=define('WP_HOME','${STAGING_URL:?}'); define('WP_SITEURL','${STAGING_URL:?}');
+    volumes:
+      - ./wordpress/data:/var/www/html
+    depends_on:
+      - mariadb
+
+  searxng:
+    image: searxng/searxng:2026.8.16-b2da6b90f
+    restart: unless-stopped
+    # why: internal only — reachable by cronista/verificatore, never published
+    networks: [newsroom-net]
+    environment:
+      - SEARXNG_SECRET=${SEARXNG_SECRET:?}
+      - SEARXNG_BASE_URL=http://searxng:8080/
+    volumes:
+      - ./searxng/settings.yml:/etc/searxng/settings.yml:ro
+    depends_on:
+      - valkey
+
+  valkey:
+    image: valkey/valkey:9.1.1-alpine
+    restart: unless-stopped
+    networks: [newsroom-net]
+    # why: limiter state is disposable; persistence off
+    command: ["valkey-server", "--save", ""]
+
+  garage:
+    image: dxflrs/garage:v2.3.0
+    restart: unless-stopped
+    networks: [newsroom-net]
+    ports:
+      # why: loopback only — director/backup S3 access from the host itself;
+      # containers cannot reach the host loopback, so isolation holds
+      - "127.0.0.1:3900:3900"
+    environment:
+      - GARAGE_RPC_SECRET=${GARAGE_RPC_SECRET:?}
+    volumes:
+      - ./garage/garage.toml:/etc/garage.toml:ro
+      - ./garage/meta:/var/lib/garage/meta
+      - ./garage/data:/var/lib/garage/data
+
+  staging:
+    image: nginx:1.30.4-alpine
+    restart: unless-stopped
+    networks: [newsroom-net]
+    ports:
+      # why: the director's preview of the magazine, LAN-visible
+      - "${STAGING_PORT:-8080}:80"
+    volumes:
+      - ./staging/nginx.conf:/etc/nginx/conf.d/default.conf:ro
+    depends_on:
+      - wordpress
+
+  # --- the six agents (SPEC §2.6: one container = one agent = one folder) ---
+  caporedattore:
+    build: ./agents
+    restart: unless-stopped
+    networks: [newsroom-net]
+    env_file: ./agents/caporedattore/.env
+    volumes:
+      - ./agents/caporedattore/hermes-home:/opt/data
+      - ./agents/caporedattore/SOUL.md:/opt/data/SOUL.md:ro
+      - ./agents/caporedattore/config.yaml:/opt/data/config.yaml:ro
+      # why: the caporedattore maintains the public status file (SPEC §5)
+      - ./public-status:/opt/data/home/public-status
+    depends_on: [mail-server, vllm-writer]
+
+  cronista:
+    build: ./agents
+    restart: unless-stopped
+    networks: [newsroom-net]
+    env_file: ./agents/cronista/.env
+    volumes:
+      - ./agents/cronista/hermes-home:/opt/data
+      - ./agents/cronista/SOUL.md:/opt/data/SOUL.md:ro
+      - ./agents/cronista/config.yaml:/opt/data/config.yaml:ro
+    depends_on: [mail-server, vllm-writer, searxng, garage]
+
+  verificatore:
+    build: ./agents
+    restart: unless-stopped
+    networks: [newsroom-net]
+    env_file: ./agents/verificatore/.env
+    volumes:
+      - ./agents/verificatore/hermes-home:/opt/data
+      - ./agents/verificatore/SOUL.md:/opt/data/SOUL.md:ro
+      - ./agents/verificatore/config.yaml:/opt/data/config.yaml:ro
+    depends_on: [mail-server, searxng, garage]
+
+  art-director:
+    build: ./agents
+    restart: unless-stopped
+    networks: [newsroom-net]
+    env_file: ./agents/art-director/.env
+    volumes:
+      - ./agents/art-director/hermes-home:/opt/data
+      - ./agents/art-director/SOUL.md:/opt/data/SOUL.md:ro
+      - ./agents/art-director/config.yaml:/opt/data/config.yaml:ro
+    depends_on: [mail-server, garage]
+
+  impaginatore:
+    build: ./agents
+    restart: unless-stopped
+    networks: [newsroom-net]
+    env_file: ./agents/impaginatore/.env
+    volumes:
+      - ./agents/impaginatore/hermes-home:/opt/data
+      - ./agents/impaginatore/SOUL.md:/opt/data/SOUL.md:ro
+      - ./agents/impaginatore/config.yaml:/opt/data/config.yaml:ro
+    depends_on: [mail-server, vllm-writer, wordpress, garage]
+
+  segreteria:
+    build: ./agents
+    restart: unless-stopped
+    # why: trust boundary — frontier-net only; email is its single channel
+    networks: [frontier-net]
+    env_file: ./agents/segreteria/.env
+    volumes:
+      - ./agents/segreteria/hermes-home:/opt/data
+      - ./agents/segreteria/SOUL.md:/opt/data/SOUL.md:ro
+      - ./agents/segreteria/config.yaml:/opt/data/config.yaml:ro
+      # why: the only file the segreteria may read (SPEC §2.4), read-only
+      - ./public-status/articles.json:/opt/data/home/articles.json:ro
+    depends_on: [mail-server]
