@@ -34,7 +34,40 @@ step "1/9 vLLM endpoints answer"
 curl -fsS "http://127.0.0.1:8000/v1/models" >/dev/null && echo "OK writer (node A)"
 curl -fsS "http://${SPARK_B_HOST:?}:8000/v1/models" >/dev/null && echo "OK verifier (node B)"
 
-TAG="[ART-2099-901]"
+# --- per-run isolation ------------------------------------------------------
+# Now that the agents are live they answer smoke mail, and every reply keeps
+# the tag in the subject: fixed tags accumulated fuse counters across runs
+# until the thread froze and check 2 could never pass again. Three measures:
+#   1. unique tags per run (years 2090-2099 = smoke namespace, never real
+#      articles), so filter notifications and awaited subjects are unique too;
+#   2. leftover smoke state wiped, so the serial wrap (~3 days) stays safe;
+#   3. agents stopped for the mail checks 2-5 (exact fuse arithmetic needs a
+#      quiet line) and restarted before 6-8, which exec into them. On restart
+#      the adapter re-baselines the mailbox, so smoke mail is never answered.
+serial=$(( $(date +%s) / 60 % 4500 ))
+TAG="[ART-$((2090 + serial / 450))-$((100 + serial % 450))]"
+TAG2="[ART-$((2090 + serial / 450))-$((550 + serial % 450))]"
+NONCE="$(date +%s)"
+AGENTS="caporedattore cronista verificatore art-director impaginatore segreteria"
+
+step "prep: quiet agents, clean smoke residue"
+# shellcheck disable=SC2064  # why: expand $AGENTS now, it never changes
+trap "compose start $AGENTS >/dev/null" EXIT
+compose stop $AGENTS
+compose exec -T mail-filter python3 - <<'PYEOF'
+from pathlib import Path
+import shutil
+import sqlite3
+
+db = sqlite3.connect("/var/lib/mail-filter/state.db")
+for table in ("thread_messages", "frozen_threads", "warned_threads"):
+    db.execute(f"DELETE FROM {table} WHERE tag LIKE '[ART-209%'")  # noqa: S608
+db.commit()
+for tag_dir in Path("/var/lib/mail-filter/hold").glob("ART-209*"):
+    shutil.rmtree(tag_dir)
+print("OK smoke tags wiped from filter state and hold dir")
+PYEOF
+
 step "2/9 tagged mail cronista -> verificatore: delivered, BCC'd, hop set"
 $MAIL send --user cronista@redazione.local --password "$MAIL_PASSWORD_CRONISTA" \
     --mail-from cronista@redazione.local --rcpt verificatore@redazione.local \
@@ -53,9 +86,9 @@ $MAIL send --user cronista@redazione.local --password "$MAIL_PASSWORD_CRONISTA" 
 step "4/9 mail without tag bounces with a readable reason"
 $MAIL send --user cronista@redazione.local --password "$MAIL_PASSWORD_CRONISTA" \
     --mail-from cronista@redazione.local --rcpt verificatore@redazione.local \
-    --subject "prova senza etichetta"
+    --subject "prova senza etichetta $NONCE"
 $MAIL await --user cronista@redazione.local --password "$MAIL_PASSWORD_CRONISTA" \
-    --subject-contains "prova senza etichetta" --from-contains "MAILER-DAEMON" --timeout 120
+    --subject-contains "prova senza etichetta $NONCE" --from-contains "MAILER-DAEMON" --timeout 120
 echo "OK bounce with reason came back to the sender"
 
 TAG2="[ART-2099-902]"
@@ -67,7 +100,7 @@ $MAIL send --user cronista@redazione.local --password "$MAIL_PASSWORD_CRONISTA" 
     --mail-from cronista@redazione.local --rcpt verificatore@redazione.local \
     --subject "$TAG2 messaggio in zona di grazia"
 $MAIL await --user caporedattore@redazione.local --password "$MAIL_PASSWORD_CAPOREDATTORE" \
-    --subject-contains "margine di grazia" --timeout 120
+    --subject-contains "thread $TAG2 in margine di grazia" --timeout 120
 $MAIL await --user verificatore@redazione.local --password "$MAIL_PASSWORD_VERIFICATORE" \
     --subject-contains "messaggio in zona di grazia" --timeout 60
 echo "OK stage 1: caporedattore warned, grace-zone mail still delivered"
@@ -78,10 +111,13 @@ $MAIL send --user cronista@redazione.local --password "$MAIL_PASSWORD_CRONISTA" 
     --mail-from cronista@redazione.local --rcpt verificatore@redazione.local \
     --subject "$TAG2 messaggio oltre margine"
 $MAIL await --user gianni@redazione.local --password "$MAIL_PASSWORD_GIANNI" \
-    --subject-contains "Fusibile scattato" --timeout 180
+    --subject-contains "Fusibile scattato: thread $TAG2" --timeout 180
 $MAIL await --user verificatore@redazione.local --password "$MAIL_PASSWORD_VERIFICATORE" \
     --subject-contains "messaggio oltre margine" --expect-absent --timeout 20
 echo "OK stage 2: 91st message held, director notified"
+
+step "agents back online (checks 6-8 exec into them)"
+compose start $AGENTS
 
 step "6/9 Garage upload + working presigned URL (from the cronista container)"
 # shellcheck disable=SC2016  # why: variables must expand inside the container

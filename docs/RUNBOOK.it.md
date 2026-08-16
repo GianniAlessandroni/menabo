@@ -86,6 +86,13 @@ chiavi, la chiave va eliminata e ricreata.
 
     ../scripts/smoke-test.sh        # le 9 prove della SPEC §9, in ordine
 
+Lo smoke test usa tag usa-e-getta negli anni 2090-2099 (mai articoli veri),
+azzera i propri residui nello stato del filtro e **ferma i sei agenti**
+durante le prove postali 2-5 — altrimenti risponderebbero alle mail di prova
+falsando l'aritmetica del fusibile — riavviandoli prima delle prove 6-8. Al
+riavvio gli agenti ripartono dalla mailbox come baseline: le mail di prova
+rimaste non verranno mai lavorate.
+
 ## 3. Il rituale quotidiano del direttore
 
 - **Posta**: casella `gianni@redazione.local`, client IMAP verso Spark A,
