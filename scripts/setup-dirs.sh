@@ -51,4 +51,8 @@ chown_in_namespace "$HERMES_UID" public-status
 
 chown_in_namespace "$WWW_DATA_UID" wordpress/data
 
+# Roundcube's Apache also serves as www-data; its sqlite state lives here.
+mkdir -p webmail/db
+chown_in_namespace "$WWW_DATA_UID" webmail/db
+
 echo "setup-dirs: done."

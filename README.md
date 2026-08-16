@@ -56,6 +56,7 @@ flowchart LR
         SX[SearXNG]
         DB[(MariaDB\nwordpress + metrics)]
         ST[staging nginx]
+        WM[Roundcube webmail]
         CAPO[caporedattore] --- CRO[cronista] --- VER[verificatore]
         ART[art-director] --- IMP[impaginatore]
         SEG[segreteria\nfrontier-net]
@@ -73,6 +74,7 @@ flowchart LR
     VER & ART & SEG -.-> VV
     ART -.-> CU
     GIANNI([Gianni,\nhuman director]) --> ST
+    GIANNI --> WM -. IMAP/SMTP .- MS
     MS -- BCC of everything --> GIANNI
 ```
 
@@ -90,7 +92,7 @@ cd spark-a
 ../scripts/setup-env.sh                         # 2nd run: generate agent .envs
 ../scripts/setup-tls.sh                         # internal mail CA (before the agent build)
 ../scripts/setup-dirs.sh                        # data dirs with container-side owners
-docker compose up -d mail-server mail-filter mariadb wordpress searxng valkey garage staging vllm-writer
+docker compose up -d mail-server mail-filter mariadb wordpress searxng valkey garage staging webmail vllm-writer
 ../scripts/setup-mailboxes.sh                   # 7 mailboxes from the .env
 ../scripts/setup-storage.sh                     # S3 keys, written into agent .envs
 ../scripts/setup-wordpress.sh                   # MCP auth, written into agent .env

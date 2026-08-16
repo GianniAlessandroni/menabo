@@ -236,6 +236,32 @@ services:
       - ./garage/meta:/var/lib/garage/meta
       - ./garage/data:/var/lib/garage/data
 
+  webmail:
+    # why: the director's browser client for the internal mail; pinned like
+    # every other image. Auth is plain IMAP against mail-server, so any
+    # mailbox (agents' included) can be inspected — LAN only, by design.
+    image: roundcube/roundcubemail:1.6.11-apache
+    restart: unless-stopped
+    networks: [newsroom-net]
+    ports:
+      # why: LAN-visible like the staging preview; never exposed beyond it
+      - "${WEBMAIL_PORT:-8025}:80"
+    environment:
+      - ROUNDCUBEMAIL_DEFAULT_HOST=mail-server
+      - ROUNDCUBEMAIL_DEFAULT_PORT=143
+      - ROUNDCUBEMAIL_SMTP_SERVER=mail-server
+      - ROUNDCUBEMAIL_SMTP_PORT=587
+      # why: lets the director log in as plain "gianni"
+      - ROUNDCUBEMAIL_USERNAME_DOMAIN=redazione.local
+      - ROUNDCUBEMAIL_DB_TYPE=sqlite
+      - TZ=${TZ:-Europe/Rome}
+    volumes:
+      # why: Roundcube's own state (contacts, settings), not mail — mail
+      # stays in the mail-server maildirs
+      - ./webmail/db:/var/roundcube/db
+    depends_on:
+      - mail-server
+
   staging:
     image: nginx:1.30.4-alpine
     restart: unless-stopped

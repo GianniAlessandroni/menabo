@@ -32,6 +32,7 @@ spark-a/mail-server/config/postfix-receive-access.cf
 spark-a/mail-server/config/dovecot-quotas.cf
 spark-a/mariadb/data/
 spark-a/wordpress/data/
+spark-a/webmail/
 spark-a/garage/data/
 spark-a/garage/meta/
 spark-b/comfyui/data/

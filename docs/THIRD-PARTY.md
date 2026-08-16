@@ -30,6 +30,7 @@ as declared upstream at the time of writing — re-verify on upgrade.
 | Valkey | 9.1.1 | BSD-3-Clause | SearXNG limiter store |
 | Garage (Deuxfleurs) | v2.3.0 | AGPL-3.0 | S3 shared storage (unmodified service) |
 | nginx | 1.30.4 | BSD-2-Clause | staging preview |
+| Roundcube | 1.6.11 | GPL-3.0-or-later | director's webmail |
 | ComfyUI (mmartial image) | ubuntu24_cuda13.1-dgx-20260805 | GPL-3.0 (ComfyUI) | image generation |
 | comfyui-mcp (artokun) | 0.51.56 | MIT | MCP door to ComfyUI |
 | himalaya CLI (pimalaya) | v1.1.0 | MIT | proactive SMTP for agents |

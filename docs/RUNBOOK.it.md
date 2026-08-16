@@ -64,7 +64,7 @@ Idempotente: si può rilanciare in qualsiasi momento (a container fermi).
 ### Spark A — infrastruttura
 
     docker compose up -d vllm-writer mail-server mail-filter mariadb wordpress \
-                         searxng valkey garage staging
+                         searxng valkey garage staging webmail
 
 ### Provisioning (idempotente, ripetibile)
 
@@ -95,9 +95,12 @@ rimaste non verranno mai lavorate.
 
 ## 3. Il rituale quotidiano del direttore
 
-- **Posta**: casella `gianni@redazione.local`, client IMAP verso Spark A,
-  porta 143 in chiaro o 993 TLS (SMTP 587; certificato dalla CA interna —
-  accetta l'avviso o importa `spark-a/mail-server/tls/ca.crt`). Ricevi in BCC ogni mail consegnata in redazione:
+- **Posta**: webmail Roundcube su `http://<spark-a>:8025` — login `gianni`
+  (il dominio viene aggiunto da solo) con la password `MAIL_PASSWORD_GIANNI`
+  del `.env`. Con le password degli agenti puoi ispezionare anche le loro
+  caselle. In alternativa, client IMAP verso Spark A: porta 143 in chiaro o
+  993 TLS (SMTP 587; certificato dalla CA interna — accetta l'avviso o
+  importa `spark-a/mail-server/tls/ca.crt`). Ricevi in BCC ogni mail consegnata in redazione:
   l'osservazione non dipende dagli agenti.
 - **Anteprima**: `http://<spark-a>:8080` (nginx staging davanti a WordPress).
 - **Assegnare un pezzo**: mail al caporedattore con oggetto `[SERVIZIO]`
