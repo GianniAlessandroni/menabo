@@ -17,9 +17,27 @@ model:
   base_url: ${VERIFIER_BASE_URL}
   api_key: "none"
 
-# why: everything not listed is off (SPEC §5); web = fetch for source
-# checking, terminal = himalaya/curl/aws, file = local notes
-toolsets:
-  - terminal
-  - web
-  - file
+# why: gateway turns resolve tools per platform (platform_toolsets.email is
+# the allow-list; everything not listed is off, SPEC §5). web = fetch for
+# source checking, terminal = himalaya/curl/aws, file = local notes,
+# skills unlocks the bundled himalaya email skill.
+platform_toolsets:
+  email:
+    - terminal
+    - web
+    - file
+    - skills
+
+# why: auxiliary tasks stay on the node-B verifier — the image's auto-chain
+# otherwise dials OpenRouter/Nous (external egress, paid lane) on hiccups.
+auxiliary:
+  compression:
+    provider: custom
+    base_url: ${VERIFIER_BASE_URL}
+    model: Qwen3.6-27B-NVFP4
+    api_key: "none"
+  title_generation:
+    provider: custom
+    base_url: ${VERIFIER_BASE_URL}
+    model: Qwen3.6-27B-NVFP4
+    api_key: "none"

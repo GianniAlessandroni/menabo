@@ -19,6 +19,24 @@ model:
   api_key: "none"
 
 # why: the segreteria is the trust boundary — email (gateway) plus reading
-# its one mounted file; everything else stays off
-toolsets:
-  - file
+# its one mounted file; everything else stays off. platform_toolsets.email
+# is the gateway's authoritative allow-list (a root `toolsets:` key is
+# ignored there), and this explicit single-entry list IS the SPEC §2.4
+# confinement: no terminal, no web, no skills, no MCP.
+platform_toolsets:
+  email:
+    - file
+
+# why: auxiliary tasks stay on the node-B verifier — the image's auto-chain
+# otherwise dials OpenRouter/Nous (external egress, paid lane) on hiccups.
+auxiliary:
+  compression:
+    provider: custom
+    base_url: ${VERIFIER_BASE_URL}
+    model: Qwen3.6-27B-NVFP4
+    api_key: "none"
+  title_generation:
+    provider: custom
+    base_url: ${VERIFIER_BASE_URL}
+    model: Qwen3.6-27B-NVFP4
+    api_key: "none"

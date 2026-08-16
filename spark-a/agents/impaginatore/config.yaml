@@ -16,12 +16,31 @@ model:
   base_url: http://vllm-writer:8000/v1
   api_key: "none"
 
-# why: everything not listed is off (SPEC §5); web is limited by SOUL.md to
-# fetching support images from the closed list of licensed sources
-toolsets:
-  - terminal
-  - web
-  - file
+# why: gateway turns resolve tools per platform (platform_toolsets.email is
+# the allow-list; everything not listed is off, SPEC §5). web is limited by
+# SOUL.md to fetching support images from the closed list of licensed
+# sources. The wordpress MCP server below stays available: servers from
+# mcp_servers are included unless an allow-list of server names is given.
+platform_toolsets:
+  email:
+    - terminal
+    - web
+    - file
+    - skills
+
+# why: auxiliary tasks stay on the local writer — the image's auto-chain
+# otherwise dials OpenRouter/Nous (external egress, paid lane) on hiccups.
+auxiliary:
+  compression:
+    provider: custom
+    base_url: http://vllm-writer:8000/v1
+    model: Qwen3.6-35B-A3B-NVFP4
+    api_key: "none"
+  title_generation:
+    provider: custom
+    base_url: http://vllm-writer:8000/v1
+    model: Qwen3.6-35B-A3B-NVFP4
+    api_key: "none"
 
 mcp_servers:
   wordpress:

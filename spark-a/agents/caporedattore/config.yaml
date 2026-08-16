@@ -16,10 +16,30 @@ model:
   base_url: http://vllm-writer:8000/v1
   api_key: "none"
 
-# why: everything not listed is off (SPEC §5 "tutto il resto disattivato");
+# why: gateway turns resolve tools PER PLATFORM — platform_toolsets.email is
+# the authoritative allow-list (a root `toolsets:` key is ignored there), and
+# everything not listed is off (SPEC §5 "tutto il resto disattivato").
 # terminal drives himalaya + aws, file edits the public status file,
-# memory is explicitly granted to this agent only.
-toolsets:
-  - terminal
-  - file
-  - memory
+# memory is explicitly granted to this agent only, skills unlocks the
+# bundled himalaya email skill.
+platform_toolsets:
+  email:
+    - terminal
+    - file
+    - memory
+    - skills
+
+# why: auxiliary tasks (context compaction, titling) must also run on the
+# local writer — the image's auto-chain otherwise dials OpenRouter/Nous
+# (external egress, paid lane) whenever the main lane hiccups.
+auxiliary:
+  compression:
+    provider: custom
+    base_url: http://vllm-writer:8000/v1
+    model: Qwen3.6-35B-A3B-NVFP4
+    api_key: "none"
+  title_generation:
+    provider: custom
+    base_url: http://vllm-writer:8000/v1
+    model: Qwen3.6-35B-A3B-NVFP4
+    api_key: "none"

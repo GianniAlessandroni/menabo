@@ -16,9 +16,27 @@ model:
   base_url: http://vllm-writer:8000/v1
   api_key: "none"
 
-# why: everything not listed is off (SPEC §5); web = fetch for reading
-# sources, terminal = himalaya/curl/aws, file = drafting locally
-toolsets:
-  - terminal
-  - web
-  - file
+# why: gateway turns resolve tools per platform (platform_toolsets.email is
+# the allow-list; everything not listed is off, SPEC §5). web = fetch for
+# reading sources, terminal = himalaya/curl/aws, file = drafting locally,
+# skills unlocks the bundled himalaya email skill.
+platform_toolsets:
+  email:
+    - terminal
+    - web
+    - file
+    - skills
+
+# why: auxiliary tasks stay on the local writer — the image's auto-chain
+# otherwise dials OpenRouter/Nous (external egress, paid lane) on hiccups.
+auxiliary:
+  compression:
+    provider: custom
+    base_url: http://vllm-writer:8000/v1
+    model: Qwen3.6-35B-A3B-NVFP4
+    api_key: "none"
+  title_generation:
+    provider: custom
+    base_url: http://vllm-writer:8000/v1
+    model: Qwen3.6-35B-A3B-NVFP4
+    api_key: "none"
