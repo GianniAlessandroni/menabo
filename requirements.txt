@@ -1,0 +1,22 @@
+# =============================================================================
+#  menabò — an experiment in human-agent newsroom integration
+# -----------------------------------------------------------------------------
+#  File:     requirements.txt
+#  Purpose:  Pinned Python dependencies for the mail filter, the metrics suite
+#            and their tests. Standard library is preferred; this list is short
+#            on purpose.
+#  Author:   Gianni Alessandroni
+#  Created:  2026-08-16
+#  License:  Apache-2.0 — see LICENSE
+#  Part of:  menabò https://github.com/GianniAlessandroni/menabo
+# =============================================================================
+
+# runtime: SMTP proxy framework for the after-queue content filter
+aiosmtpd==1.4.6
+# runtime: pure-Python MariaDB/MySQL driver (no C extension, arm64-safe)
+PyMySQL==1.1.1
+
+# development / test
+pytest==8.3.4
+mypy==1.14.1
+ruff==0.9.2

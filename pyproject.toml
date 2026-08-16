@@ -1,0 +1,39 @@
+# =============================================================================
+#  menabò — an experiment in human-agent newsroom integration
+# -----------------------------------------------------------------------------
+#  File:     pyproject.toml
+#  Purpose:  Tool configuration only (ruff, mypy, pytest). The project is not
+#            packaged; scripts run from the repo with a pinned requirements.txt.
+#  Author:   Gianni Alessandroni
+#  Created:  2026-08-16
+#  License:  Apache-2.0 — see LICENSE
+#  Part of:  menabò https://github.com/GianniAlessandroni/menabo
+# =============================================================================
+
+[tool.ruff]
+line-length = 100
+target-version = "py311"
+
+[tool.ruff.lint]
+select = ["E", "F", "W", "I", "N", "UP", "B", "A", "C4", "SIM", "RUF"]
+
+[tool.mypy]
+strict = true
+python_version = "3.11"
+files = ["metrics", "spark-a/mail-server/filters", "tests"]
+# why: flat script dirs, not packages — resolve their imports by path
+mypy_path = ["metrics", "spark-a/mail-server/filters"]
+explicit_package_bases = true
+
+[[tool.mypy.overrides]]
+module = "pymysql.*"
+ignore_missing_imports = true
+
+[[tool.mypy.overrides]]
+module = "aiosmtpd.*"
+ignore_missing_imports = true
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+# why: filters live under a kebab-case service dir, importable only via path
+pythonpath = ["metrics", "spark-a/mail-server/filters"]

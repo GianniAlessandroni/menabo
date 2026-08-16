@@ -1,0 +1,44 @@
+# =============================================================================
+#  menabò — an experiment in human-agent newsroom integration
+# -----------------------------------------------------------------------------
+#  File:     .gitignore
+#  Purpose:  Keep secrets, runtime experiment data and tool caches out of git.
+#            Experiment data is backed up by scripts/backup.sh, never committed.
+#  Author:   Gianni Alessandroni
+#  Created:  2026-08-16
+#  License:  Apache-2.0 — see LICENSE
+#  Part of:  menabò https://github.com/GianniAlessandroni/menabo
+# =============================================================================
+
+# Secrets: only .env.example files are tracked.
+.env
+
+# Original bootstrap document; preserved verbatim as docs/SPEC.md.
+/CLAUDE-CODE-BOOTSTRAP.md
+
+# Experiment data (maildirs, agent homes, DB data, logs): data, not code.
+spark-a/agents/*/hermes-home/*
+!spark-a/agents/*/hermes-home/.gitkeep
+spark-a/mail-server/data/
+spark-a/mail-server/state/
+# docker-mailserver writes runtime account files into the config volume
+spark-a/mail-server/config/postfix-accounts.cf
+spark-a/mail-server/config/postfix-virtual.cf
+spark-a/mail-server/config/postfix-send-access.cf
+spark-a/mail-server/config/postfix-receive-access.cf
+spark-a/mail-server/config/dovecot-quotas.cf
+spark-a/mariadb/data/
+spark-a/wordpress/data/
+spark-a/garage/data/
+spark-a/garage/meta/
+spark-b/comfyui/data/
+backups/
+*.log
+
+# Python
+__pycache__/
+*.py[cod]
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+.venv/
