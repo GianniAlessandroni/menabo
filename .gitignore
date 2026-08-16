@@ -21,6 +21,9 @@ spark-a/agents/*/hermes-home/*
 !spark-a/agents/*/hermes-home/.gitkeep
 spark-a/mail-server/data/
 spark-a/mail-server/state/
+# Internal mail CA and server certificate (setup-tls.sh): secrets, never code.
+spark-a/mail-server/tls/
+spark-a/agents/ca.crt
 # docker-mailserver writes runtime account files into the config volume
 spark-a/mail-server/config/postfix-accounts.cf
 spark-a/mail-server/config/postfix-virtual.cf

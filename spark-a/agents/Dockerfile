@@ -31,5 +31,11 @@ RUN curl -fsSL -o /tmp/himalaya.tgz \
     && chmod 0755 /usr/local/bin/himalaya \
     && rm /tmp/himalaya.tgz
 
+# why: the gateway's SMTP STARTTLS verifies certificates, so the internal
+# mail CA must live in the system trust store (himalaya reads it too).
+# ca.crt is produced by scripts/setup-tls.sh — run it before building.
+COPY ca.crt /usr/local/share/ca-certificates/menabo-mail-ca.crt
+RUN update-ca-certificates
+
 # hermes runs as UID 10000 (image convention); never run agents as root
 USER hermes

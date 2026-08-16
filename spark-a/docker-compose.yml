@@ -113,11 +113,13 @@ services:
       # why: LAN access for the director's mail client only
       - "143:143"
       - "587:587"
+      - "993:993"
     volumes:
       - ./mail-server/data/mail-data:/var/mail
       - ./mail-server/data/mail-state:/var/mail-state
       - ./mail-server/data/mail-logs:/var/log/mail
       - ./mail-server/config:/tmp/docker-mailserver
+      - ./mail-server/tls:/tmp/dms-tls:ro
     environment:
       - TZ=${TZ:-Europe/Rome}
       # why: matrix + login enforcement is hand-written in postfix-main.cf;
@@ -130,8 +132,12 @@ services:
       - ENABLE_OPENDKIM=0
       - ENABLE_OPENDMARC=0
       - ENABLE_POLICYD_SPF=0
-      # why: phase 1-2 runs cleartext on the isolated network (see RUNBOOK)
-      - SSL_TYPE=
+      # why: the Hermes email adapter refuses cleartext (IMAP is implicit
+      # TLS, SMTP mandatory STARTTLS), so the internal CA from setup-tls.sh
+      # serves TLS; cleartext stays allowed for the director and smoke test
+      - SSL_TYPE=manual
+      - SSL_CERT_PATH=/tmp/dms-tls/mail.crt
+      - SSL_KEY_PATH=/tmp/dms-tls/mail.key
     healthcheck:
       test: ["CMD", "ss", "-lntp", "|", "grep", ":25"]
       interval: 30s

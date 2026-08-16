@@ -2,16 +2,17 @@
 #  menabò — an experiment in human-agent newsroom integration
 # -----------------------------------------------------------------------------
 #  File:     spark-a/mail-server/config/dovecot.cf
-#  Purpose:  Dovecot override: allow cleartext IMAP auth on the isolated
-#            Docker network (phase 1-2 runs without TLS; see RUNBOOK).
+#  Purpose:  Dovecot override: keep cleartext IMAP auth allowed on 143 for
+#            the director and the smoke test; agents use TLS on 993.
 #  Author:   Gianni Alessandroni
 #  Created:  2026-08-16
 #  License:  Apache-2.0 — see LICENSE
 #  Part of:  menabò https://github.com/GianniAlessandroni/menabo
 # =============================================================================
 
-# why: phase 1-2 has no internet exposure and no TLS; the Hermes email
-# adapter polls IMAP on 143 in cleartext. Phase 3 must revisit this.
+# why: dual-mode IMAP (see RUNBOOK §7) — the Hermes email adapter polls
+# 993 (implicit TLS, internal CA), while 143 stays cleartext-capable for
+# the director's LAN client and the smoke test on the isolated network.
 # note: Dovecot 2.3 name (DMS 15.1.0 ships 2.3.19); the 2.4+ rename
 # `auth_allow_cleartext` is unknown there and doveconf dies on it.
 disable_plaintext_auth = no

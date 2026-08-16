@@ -21,8 +21,11 @@ postconf -P "10026/inet/smtpd_sender_restrictions="
 postconf -P "10026/inet/smtpd_recipient_restrictions=permit_mynetworks,reject"
 postconf -P "10026/inet/smtpd_relay_restrictions=permit_mynetworks,reject"
 postconf -P "10026/inet/mynetworks=172.28.0.7/32"
-# why: submission TLS is off in phase 1-2 (isolated network, see RUNBOOK);
-# without this Postfix would still demand TLS before AUTH on port 587.
-postconf -P "submission/inet/smtpd_tls_security_level=none"
+# why: dual-mode submission (see RUNBOOK §7) — STARTTLS offered for the
+# Hermes gateway and himalaya, cleartext AUTH still accepted on the isolated
+# network for the director's client and the smoke test. DMS would otherwise
+# demand TLS before AUTH on 587 as soon as SSL_TYPE is set.
+postconf -P "submission/inet/smtpd_tls_security_level=may"
+postconf -P "submission/inet/smtpd_tls_auth_only=no"
 
 echo "user-patches.sh: re-injection listener on 10026 configured."

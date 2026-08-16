@@ -43,6 +43,15 @@ del repository, salvo dove indicato.
 Le password sono generate a caso e propagate automaticamente; nessun
 copia-incolla. I file `.env` esistenti non vengono mai sovrascritti.
 
+### Spark A — TLS interno della posta
+
+    ../scripts/setup-tls.sh
+
+Genera la CA interna e il certificato del mail-server (l'adapter email di
+Hermes parla solo TLS). Va lanciato **prima** di costruire l'immagine degli
+agenti: la CA viene cotta nel loro trust store in fase di build. Idempotente;
+non rigenera mai una CA esistente.
+
 ### Spark A — cartelle dati e permessi
 
     ../scripts/setup-dirs.sh
@@ -80,7 +89,8 @@ chiavi, la chiave va eliminata e ricreata.
 ## 3. Il rituale quotidiano del direttore
 
 - **Posta**: casella `gianni@redazione.local`, client IMAP verso Spark A,
-  porta 143 (SMTP 587). Ricevi in BCC ogni mail consegnata in redazione:
+  porta 143 in chiaro o 993 TLS (SMTP 587; certificato dalla CA interna —
+  accetta l'avviso o importa `spark-a/mail-server/tls/ca.crt`). Ricevi in BCC ogni mail consegnata in redazione:
   l'osservazione non dipende dagli agenti.
 - **Anteprima**: `http://<spark-a>:8080` (nginx staging davanti a WordPress).
 - **Assegnare un pezzo**: mail al caporedattore con oggetto `[SERVIZIO]`
@@ -163,7 +173,7 @@ tuo client copiandoli dagli `.eml`.
 
 | Tema | Stato |
 |---|---|
-| **TLS interno** | Spento in fase 1-2 (rete isolata): IMAP 143 / SMTP 587 in chiaro, `auth_allow_cleartext` in Dovecot. Da rivedere in fase 3. |
+| **TLS interno** | Il piano era: spento in fase 1-2 (rete isolata). L'adapter email di Hermes però rifiuta il chiaro (IMAP solo TLS implicito, SMTP con STARTTLS verificato), quindi la posta è **dual-mode**: CA interna (`setup-tls.sh`), agenti su 993/STARTTLS-587, mentre 143 e la AUTH in chiaro su 587 restano per il client del direttore e lo smoke test. |
 | **Qwen-Image 2.0** | Non ha pesi pubblici (solo API): lo spike ha sostituito con **Qwen-Image-2512** (pesi aperti, supporto ComfyUI nativo, template "Qwen-Image-2512"; file fp8 da Comfy-Org in `models/`). |
 | **vLLM su Spark A** | Tag `cu130-nightly` congelato de-facto (non più aggiornato): è la configurazione provata su questo nodo. Percorso di upgrade: `v0.27.1(-aarch64)`; se l'output MoE degrada, fallback `--moe-backend=marlin`. |
 | **vLLM su Spark B** | `v0.27.1-aarch64`: il checkpoint 27B NVFP4 richiede vLLM ≥ 0.24. |
