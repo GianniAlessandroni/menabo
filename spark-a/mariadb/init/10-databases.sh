@@ -26,3 +26,8 @@ FLUSH PRIVILEGES;
 SQL
 
 echo "10-databases.sh: wordpress and metrics databases provisioned."
+
+# The canonical schema lives in metrics/schema.sql (mounted read-only here);
+# it is self-contained (CREATE DATABASE IF NOT EXISTS + USE metrics).
+mariadb --protocol=socket -uroot < /opt/menabo/metrics-schema.sql
+echo "10-databases.sh: metrics schema applied."

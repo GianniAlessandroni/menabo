@@ -168,8 +168,10 @@ services:
     volumes:
       - ./mariadb/data:/var/lib/mysql
       - ./mariadb/init:/docker-entrypoint-initdb.d:ro
-      # why: schema applied at first boot; later changes via metrics/migrations/
-      - ../metrics/schema.sql:/docker-entrypoint-initdb.d/20-metrics-schema.sql:ro
+      # why: a file mount nested inside the read-only init dir cannot get a
+      # mountpoint created; 10-databases.sh applies the canonical schema
+      # from this separate path (later changes via metrics/migrations/)
+      - ../metrics/schema.sql:/opt/menabo/metrics-schema.sql:ro
 
   wordpress:
     image: wordpress:7.0.4-php8.4-apache
