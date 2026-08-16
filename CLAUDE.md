@@ -32,7 +32,8 @@ Spark nodes, everything in Docker, nothing exposed to the internet.
 
 ## Hard invariants (never "fix" these away)
 
-- The impaginatore's WordPress user stays **Contributor** — drafts only.
+- The impaginatore's WordPress role stays a **Contributor clone plus
+  `upload_files`** — complete drafts with images, never `publish_posts`.
 - The delivery matrix lives in `spark-a/mail-server/config/` Postfix maps,
   never in prompts.
 - `always_bcc` to the director stays.

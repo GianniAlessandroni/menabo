@@ -96,21 +96,33 @@ Application Password): incollarle subito nei rispettivi
 
 Il collettore è idempotente (chiave sui Message-ID): rilanciarlo non duplica.
 
-## 5. Il fusibile: thread congelati
+## 5. Il fusibile a due stadi: thread oltre budget
 
-Quando un tag supera il budget (default 60, variabile
-`NEWSROOM_MESSAGE_BUDGET`), il filtro trattiene i messaggi e ti manda una mail
-`[SERVIZIO] Fusibile scattato`. I messaggi trattenuti sono in
-`spark-a/mail-server/state/hold/<TAG>/` (file `.eml`, leggibili).
+Il budget per articolo è `NEWSROOM_MESSAGE_BUDGET` (default 60). Il fusibile
+scatta in due stadi:
 
-Per **scongelare** un thread, dopo aver deciso come sbloccarlo:
+1. **Avviso (al budget)**: il filtro manda al caporedattore una mail
+   `[SERVIZIO] Budget superato` (tu la vedi in BCC). Il thread continua a
+   funzionare per un **margine di grazia del 50%** del budget (default: altri
+   30 messaggi), in cui il caporedattore deve chiudere il lavoro.
+2. **Congelamento (a budget + 50%)**: i messaggi successivi vengono trattenuti
+   in `spark-a/mail-server/state/hold/<TAG>/` (file `.eml`, leggibili) e
+   ricevi la mail `[SERVIZIO] Fusibile scattato`. Da qui si esce solo a mano.
 
-    sqlite3 spark-a/mail-server/state/state.db \
-        "DELETE FROM frozen_threads WHERE tag = '[ART-2026-001]';"
+Entrambi gli scatti finiscono nelle metriche come eventi `fusibile`.
 
-I messaggi già trattenuti NON vengono reinviati automaticamente (scelta
+Per **scongelare** un thread, dopo aver deciso come sbloccarlo (il contatore
+va azzerato, altrimenti il primo messaggio successivo ricongela subito):
+
+    sqlite3 spark-a/mail-server/state/state.db "
+        DELETE FROM frozen_threads  WHERE tag = '[ART-2026-001]';
+        DELETE FROM warned_threads  WHERE tag = '[ART-2026-001]';
+        DELETE FROM thread_messages WHERE tag = '[ART-2026-001]';"
+
+(Il collettore ha già copiato i dati in `metrics`: azzerare qui non perde
+nulla.) I messaggi trattenuti NON vengono reinviati automaticamente (scelta
 deliberata: il fallimento resta visibile). Se servono, rimandali a mano dal
-tuo client copiandoli dagli `.eml`. L'evento resta registrato in `metrics`.
+tuo client copiandoli dagli `.eml`.
 
 ## 6. Guasti e ripristino
 
@@ -141,6 +153,8 @@ tuo client copiandoli dagli `.eml`. L'evento resta registrato in `metrics`.
 | **URL presigned** | Firmati per l'endpoint interno `garage:3900`: valgono fra agenti. Dal host del direttore: `aws --endpoint-url http://127.0.0.1:3900 s3 ...` con una chiave dedicata. |
 | **Bucket `piani`** | La SPEC elencava 3 bucket; `piani` è il quarto, per dare al caporedattore una chiave a privilegio minimo senza aprirgli `bozze`. |
 | **Filtro contenuti** | After-queue (`content_filter` → proxy Python → reinserimento su 10026, riservato all'IP del filtro). Il rimbalzo "senza tag" arriva quindi come mail di MAILER-DAEMON, non come rifiuto immediato. |
+| **Fusibile a due stadi** | Decisione del 2026-08-16 (deroga a SPEC §6.4, che congelava subito al budget): avviso al caporedattore al budget, congelamento a budget + 50%. Deterministico, senza re-invii automatici (SPEC §8 rispettata). |
+| **Ruolo WP impaginatore** | Decisione del 2026-08-16: ruolo dedicato `impaginatore` = clone di Contributor + `upload_files`. La redazione consegna la bozza completa di immagini (con licenza e attribuzione in didascalia); `publish_posts` resta assente: pubblica solo il direttore. |
 
 ## 8. Fase 3 (solo predisposizione — NON attivare)
 
