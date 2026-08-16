@@ -59,7 +59,11 @@ class ThreadState:
 
     def __init__(self, db_path: Path) -> None:
         db_path.parent.mkdir(parents=True, exist_ok=True)
-        self._conn = sqlite3.connect(db_path)
+        # why: the state is built in the main thread but used from aiosmtpd's
+        # Controller loop thread; sqlite's same-thread guard would raise on
+        # every message. CPython's sqlite3 is serialized, and after startup
+        # only the loop thread touches the connection.
+        self._conn = sqlite3.connect(db_path, check_same_thread=False)
         self._conn.executescript(_SCHEMA)
         self._conn.commit()
 

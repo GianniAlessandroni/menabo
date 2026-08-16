@@ -56,3 +56,28 @@ def test_thread_summary_returns_most_recent_messages_oldest_first(tmp_path: Path
     assert len(summary) == 20
     assert summary[0].subject.endswith("messaggio 5")
     assert summary[-1].subject.endswith("messaggio 24")
+
+
+def test_state_is_usable_from_another_thread(tmp_path: Path) -> None:
+    """Regression: the proxy builds the state in the main thread, but every
+    handler call happens in aiosmtpd's Controller loop thread. sqlite's
+    same-thread guard killed every DATA with ProgrammingError until the
+    connection was opened with check_same_thread=False."""
+    import threading
+
+    state = make_state(tmp_path)
+    failures: list[BaseException] = []
+
+    def use_state() -> None:
+        try:
+            state.record_message(TAG, "cronista@redazione.local",
+                                 "verificatore@redazione.local",
+                                 f"{TAG} bozza", "2026-08-16T10:00:00+00:00")
+            assert state.message_count(TAG) == 1
+        except BaseException as exc:  # collected, asserted in the main thread
+            failures.append(exc)
+
+    worker = threading.Thread(target=use_state)
+    worker.start()
+    worker.join()
+    assert not failures, f"cross-thread use failed: {failures}"
