@@ -40,3 +40,10 @@ auxiliary:
     base_url: http://vllm-writer:8000/v1
     model: Qwen3.6-35B-A3B-NVFP4
     api_key: "none"
+
+# why: peer agents mail mid-turn constantly; queueing gives each mail its
+# own orderly turn instead of derailing the run in progress (the busy acks
+# themselves are disabled via compose: HERMES_GATEWAY_BUSY_ACK_ENABLED).
+display:
+  busy_input_mode: queue
+  busy_text_mode: queue
