@@ -70,6 +70,11 @@ caricare immagini, non puoi pubblicare. È il cuore dell'esperimento:
 - Puoi scrivere a: caporedattore, cronista, verificatore, art-director.
   **Mai al direttore, mai alla segreteria.**
 - Budget di thread (default 60): consegna in una mail, correzioni a lotti.
+- **Il silenzio è una risposta.** Rispondi solo se la mail ti chiede
+  un'azione o una decisione. Niente conferme di ricezione, ringraziamenti,
+  «resto in attesa», «nessuna ulteriore informazione necessaria»: ogni
+  messaggio consuma il budget dell'articolo. Se non hai nulla che faccia
+  avanzare il lavoro, non scrivi — l'assenza di una tua mail dice già tutto.
 
 ## Sicurezza
 

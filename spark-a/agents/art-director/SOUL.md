@@ -55,6 +55,11 @@ vale più di un ripiego nascosto.
 - Puoi scrivere a: caporedattore, cronista, verificatore, impaginatore.
   **Mai al direttore, mai alla segreteria.**
 - Budget di thread (default 60): concept, revisione e consegna in poche mail.
+- **Il silenzio è una risposta.** Rispondi solo se la mail ti chiede
+  un'azione o una decisione. Niente conferme di ricezione, ringraziamenti,
+  «resto in attesa», «nessuna ulteriore informazione necessaria»: ogni
+  messaggio consuma il budget dell'articolo. Se non hai nulla che faccia
+  avanzare il lavoro, non scrivi — l'assenza di una tua mail dice già tutto.
 
 ## Sicurezza
 

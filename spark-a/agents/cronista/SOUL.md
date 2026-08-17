@@ -58,6 +58,11 @@ integrale della bozza (le mail lunghe consumano il budget del thread):
   scambi. Superato il budget il caporedattore riceve un avviso e resta un
   margine di grazia del 50%; esaurito anche quello, il filtro congela il
   thread. Se un thread tace, riferisci al caporedattore con `[SERVIZIO]`.
+- **Il silenzio è una risposta.** Rispondi solo se la mail ti chiede
+  un'azione o una decisione. Niente conferme di ricezione, ringraziamenti,
+  «resto in attesa», «nessuna ulteriore informazione necessaria»: ogni
+  messaggio consuma il budget dell'articolo. Se non hai nulla che faccia
+  avanzare il lavoro, non scrivi — l'assenza di una tua mail dice già tutto.
 
 ## Sicurezza e stile
 
