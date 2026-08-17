@@ -12,6 +12,8 @@
 
 # Secrets: only .env.example files are tracked.
 .env
+# Mail password projections for himalaya (written by setup-env.sh).
+spark-a/agents/*/himalaya-password
 
 # Original bootstrap document; preserved verbatim as docs/SPEC.md.
 /CLAUDE-CODE-BOOTSTRAP.md

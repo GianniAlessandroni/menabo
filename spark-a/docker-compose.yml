@@ -298,6 +298,8 @@ services:
       - ./agents/caporedattore/SOUL.md:/opt/data/SOUL.md:ro
       - ./agents/caporedattore/config.yaml:/opt/data/config.yaml:ro
       - ./agents/caporedattore/himalaya.toml:/opt/data/.config/himalaya/config.toml:ro
+      # why: run setup-env.sh before up — a missing host file becomes a dir
+      - ./agents/caporedattore/himalaya-password:/opt/data/.config/himalaya/password:ro
       # why: the caporedattore maintains the public status file (SPEC §5)
       - ./public-status:/opt/data/home/public-status
     depends_on: [mail-server, vllm-writer]
@@ -320,6 +322,8 @@ services:
       - ./agents/cronista/SOUL.md:/opt/data/SOUL.md:ro
       - ./agents/cronista/config.yaml:/opt/data/config.yaml:ro
       - ./agents/cronista/himalaya.toml:/opt/data/.config/himalaya/config.toml:ro
+      # why: run setup-env.sh before up — a missing host file becomes a dir
+      - ./agents/cronista/himalaya-password:/opt/data/.config/himalaya/password:ro
     depends_on: [mail-server, vllm-writer, searxng, garage]
 
   verificatore:
@@ -340,6 +344,8 @@ services:
       - ./agents/verificatore/SOUL.md:/opt/data/SOUL.md:ro
       - ./agents/verificatore/config.yaml:/opt/data/config.yaml:ro
       - ./agents/verificatore/himalaya.toml:/opt/data/.config/himalaya/config.toml:ro
+      # why: run setup-env.sh before up — a missing host file becomes a dir
+      - ./agents/verificatore/himalaya-password:/opt/data/.config/himalaya/password:ro
     depends_on: [mail-server, searxng, garage]
 
   art-director:
@@ -360,6 +366,8 @@ services:
       - ./agents/art-director/SOUL.md:/opt/data/SOUL.md:ro
       - ./agents/art-director/config.yaml:/opt/data/config.yaml:ro
       - ./agents/art-director/himalaya.toml:/opt/data/.config/himalaya/config.toml:ro
+      # why: run setup-env.sh before up — a missing host file becomes a dir
+      - ./agents/art-director/himalaya-password:/opt/data/.config/himalaya/password:ro
     depends_on: [mail-server, garage]
 
   impaginatore:
@@ -380,6 +388,8 @@ services:
       - ./agents/impaginatore/SOUL.md:/opt/data/SOUL.md:ro
       - ./agents/impaginatore/config.yaml:/opt/data/config.yaml:ro
       - ./agents/impaginatore/himalaya.toml:/opt/data/.config/himalaya/config.toml:ro
+      # why: run setup-env.sh before up — a missing host file becomes a dir
+      - ./agents/impaginatore/himalaya-password:/opt/data/.config/himalaya/password:ro
     depends_on: [mail-server, vllm-writer, wordpress, garage]
 
   segreteria:

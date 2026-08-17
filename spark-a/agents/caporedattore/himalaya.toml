@@ -24,9 +24,10 @@ backend.port = 993
 backend.encryption.type = "tls"
 backend.login = "caporedattore@redazione.local"
 backend.auth.type = "password"
-# why: the password already lives in the container env (env_file), so this
-# file carries no secret and stays committable.
-backend.auth.cmd = "printenv EMAIL_PASSWORD"
+# why: the Hermes terminal tool strips EMAIL_* from subprocess environments,
+# so the password comes from a file that setup-env.sh projects out of
+# spark-a/.env (mounted read-only next to this config; not in git).
+backend.auth.cmd = "cat /opt/data/.config/himalaya/password"
 
 message.send.backend.type = "smtp"
 message.send.backend.host = "mail-server"
@@ -34,7 +35,7 @@ message.send.backend.port = 587
 message.send.backend.encryption.type = "start-tls"
 message.send.backend.login = "caporedattore@redazione.local"
 message.send.backend.auth.type = "password"
-message.send.backend.auth.cmd = "printenv EMAIL_PASSWORD"
+message.send.backend.auth.cmd = "cat /opt/data/.config/himalaya/password"
 
 # why: DMS special folders match himalaya's canonical names; declared anyway
 # so a failed save-to-Sent can never be mistaken for a send failure.

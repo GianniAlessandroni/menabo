@@ -67,6 +67,20 @@ for agent in "${AGENTS[@]}"; do
     echo "setup-env: $env_file generated (mail password and node-B host set)."
 done
 
+# himalaya cannot read EMAIL_PASSWORD from the environment: the Hermes
+# terminal tool strips gateway credentials from every subprocess it spawns.
+# Project the mail password into a per-agent file instead (mounted read-only
+# at /opt/data/.config/himalaya/password; himalaya.toml `cat`s it). Derived
+# data, rewritten on every run so it always matches spark-a/.env. The
+# segreteria is skipped: no terminal, no proactive channel (SPEC §2.4).
+for agent in caporedattore cronista verificatore art-director impaginatore; do
+    var="MAIL_PASSWORD_$(tr '[:lower:]-' '[:upper:]_' <<< "$agent")"
+    printf '%s\n' "${!var:?missing $var in spark-a/.env}" > "agents/$agent/himalaya-password"
+    # why: the agent container reads this as uid 10000 (hermes)
+    chmod 0644 "agents/$agent/himalaya-password"
+done
+echo "setup-env: himalaya password files projected from spark-a/.env."
+
 echo "setup-env: done ($created file(s) generated)."
 echo "setup-env: S3 keys are filled in by setup-storage.sh, the WordPress MCP"
 echo "setup-env: auth by setup-wordpress.sh — run them after 'docker compose up'."
