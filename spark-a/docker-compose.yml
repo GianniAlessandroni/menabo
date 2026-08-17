@@ -297,6 +297,7 @@ services:
       - ./agents/caporedattore/hermes-home:/opt/data
       - ./agents/caporedattore/SOUL.md:/opt/data/SOUL.md:ro
       - ./agents/caporedattore/config.yaml:/opt/data/config.yaml:ro
+      - ./agents/caporedattore/himalaya.toml:/opt/data/.config/himalaya/config.toml:ro
       # why: the caporedattore maintains the public status file (SPEC §5)
       - ./public-status:/opt/data/home/public-status
     depends_on: [mail-server, vllm-writer]
@@ -318,6 +319,7 @@ services:
       - ./agents/cronista/hermes-home:/opt/data
       - ./agents/cronista/SOUL.md:/opt/data/SOUL.md:ro
       - ./agents/cronista/config.yaml:/opt/data/config.yaml:ro
+      - ./agents/cronista/himalaya.toml:/opt/data/.config/himalaya/config.toml:ro
     depends_on: [mail-server, vllm-writer, searxng, garage]
 
   verificatore:
@@ -337,6 +339,7 @@ services:
       - ./agents/verificatore/hermes-home:/opt/data
       - ./agents/verificatore/SOUL.md:/opt/data/SOUL.md:ro
       - ./agents/verificatore/config.yaml:/opt/data/config.yaml:ro
+      - ./agents/verificatore/himalaya.toml:/opt/data/.config/himalaya/config.toml:ro
     depends_on: [mail-server, searxng, garage]
 
   art-director:
@@ -356,6 +359,7 @@ services:
       - ./agents/art-director/hermes-home:/opt/data
       - ./agents/art-director/SOUL.md:/opt/data/SOUL.md:ro
       - ./agents/art-director/config.yaml:/opt/data/config.yaml:ro
+      - ./agents/art-director/himalaya.toml:/opt/data/.config/himalaya/config.toml:ro
     depends_on: [mail-server, garage]
 
   impaginatore:
@@ -375,6 +379,7 @@ services:
       - ./agents/impaginatore/hermes-home:/opt/data
       - ./agents/impaginatore/SOUL.md:/opt/data/SOUL.md:ro
       - ./agents/impaginatore/config.yaml:/opt/data/config.yaml:ro
+      - ./agents/impaginatore/himalaya.toml:/opt/data/.config/himalaya/config.toml:ro
     depends_on: [mail-server, vllm-writer, wordpress, garage]
 
   segreteria:

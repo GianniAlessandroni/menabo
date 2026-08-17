@@ -1,0 +1,44 @@
+# =============================================================================
+#  menabò — an experiment in human-agent newsroom integration
+# -----------------------------------------------------------------------------
+#  File:     spark-a/agents/verificatore/himalaya.toml
+#  Purpose:  himalaya CLI account for the verificatore: proactive SMTP plus
+#            IMAP against the internal mail-server (SPEC §5). Secret-free —
+#            the password is read from the container environment at run time.
+#  Author:   Gianni Alessandroni
+#  Created:  2026-08-17
+#  License:  Apache-2.0 — see LICENSE
+#  Part of:  menabò https://github.com/GianniAlessandroni/menabo
+# =============================================================================
+
+[accounts.default]
+email = "verificatore@redazione.local"
+display-name = "verificatore"
+default = true
+
+# why: IMAP 993 implicit TLS / SMTP 587 STARTTLS — the internal CA is baked
+# into the agent image trust store by scripts/setup-tls.sh.
+backend.type = "imap"
+backend.host = "mail-server"
+backend.port = 993
+backend.encryption.type = "tls"
+backend.login = "verificatore@redazione.local"
+backend.auth.type = "password"
+# why: the password already lives in the container env (env_file), so this
+# file carries no secret and stays committable.
+backend.auth.cmd = "printenv EMAIL_PASSWORD"
+
+message.send.backend.type = "smtp"
+message.send.backend.host = "mail-server"
+message.send.backend.port = 587
+message.send.backend.encryption.type = "start-tls"
+message.send.backend.login = "verificatore@redazione.local"
+message.send.backend.auth.type = "password"
+message.send.backend.auth.cmd = "printenv EMAIL_PASSWORD"
+
+# why: DMS special folders match himalaya's canonical names; declared anyway
+# so a failed save-to-Sent can never be mistaken for a send failure.
+folder.aliases.inbox = "INBOX"
+folder.aliases.sent = "Sent"
+folder.aliases.drafts = "Drafts"
+folder.aliases.trash = "Trash"
