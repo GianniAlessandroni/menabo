@@ -17,6 +17,9 @@ model:
   # why: node-B endpoint; frontier-net has LAN egress for exactly this
   base_url: ${VERIFIER_BASE_URL}
   api_key: "none"
+  # why: matches --max-model-len on the vLLM side, so Hermes plans
+  # compaction against the real window instead of learning it from 400s
+  context_length: 262144
 
 # why: the segreteria is the trust boundary — email (gateway) plus reading
 # its one mounted file; everything else stays off. platform_toolsets.email

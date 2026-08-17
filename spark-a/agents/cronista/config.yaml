@@ -15,6 +15,9 @@ model:
   model: Qwen3.6-35B-A3B-NVFP4
   base_url: http://vllm-writer:8000/v1
   api_key: "none"
+  # why: matches --max-model-len on the vLLM side, so Hermes plans
+  # compaction against the real window instead of learning it from 400s
+  context_length: 262144
 
 # why: gateway turns resolve tools per platform (platform_toolsets.email is
 # the allow-list; everything not listed is off, SPEC §5). web = fetch for

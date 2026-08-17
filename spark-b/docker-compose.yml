@@ -57,7 +57,7 @@ services:
       - --kv-cache-dtype=fp8
       # why: leave headroom for ComfyUI on the same unified memory
       - --gpu-memory-utilization=0.5
-      - --max-model-len=131072
+      - --max-model-len=262144
       - --max-num-seqs=4
       - --max-num-batched-tokens=8192
       - --enable-chunked-prefill
